@@ -1,0 +1,4 @@
+This is the place where kernel will be put.
+copy this kernel to a grub floppy and modify the menu.lst file
+and boot from the floppy.
+
