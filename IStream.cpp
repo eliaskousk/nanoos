@@ -58,7 +58,11 @@
 			}
 		}
 	}
-
+	char *IStream::getstring()
+	{
+		getString();
+		return (buffer);
+	}
 	void IStream::getWord(char *str1, char *p1)
 	{						//Obtains first word in a string
 		int pnr = 1;		//Ends string in '\0'.
