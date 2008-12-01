@@ -18,26 +18,14 @@
 #include "kbd.h"
 #include "IStream.h"
 #include "shell.h"
-#define OS_NAME "NanOS"
+#include "multiboot.h"
 
 extern "C" int kmain(multibootInfo *mb);
-char *logo[6]={"'|.   '|'                   ..|''||    .|'''.|  ",
-" |'|   |   ....   .. ...   .|'    ||   ||..  '  ",
-" | '|. |  '' .||   ||  ||  ||      ||   ''|||.  ",
-" |   |||  .|' ||   ||  ||  '|.     || .     '|| ",
-".|.   '|  '|..'|' .||. ||.  ''|...|'  |'....|'  ",
-"================================================\n"};
 
 int kmain(multibootInfo *mb)
 {
 	construct();
-	cout.SetTextColour(BRIGHTBLUE);
-	//cout.SetBackColour(WHITE);
-	for(int i=0;i<6;i++)	
-	cout<<logo[i]<<"\n";
-	cout.SetTextColour(RED);
-	//cout.SetBackColour(WHITE);
-	cout<<" is booting\n";
+	cout<<"Nano OS is booting\n";
 	/*cout<<"    )               )  (   "<<"\n";
 	cout<<" ( /(            ( /(  )\\ )"<<"\n";
 	cout<<" )\\())   )       )\\())(()/("<<"\n";
@@ -46,8 +34,7 @@ int kmain(multibootInfo *mb)
 	cout<<"| \\| ((_)_ _(_/( / _ \\/ __|"<<"\n";
 	cout<<"| .` / _` | ' \\)) (_) \\__ \\"<<"\n";
 	cout<<"|_|\\_\\__,_|_||_| \\___/|___/"<<"\n";*/
-	//disable();
-	cout.SetTextColour(WHITE);	
+			
 	cout<<"Setting up GDT ";
 	GDT::setup();
 	cout<<"done\n";
@@ -68,28 +55,23 @@ int kmain(multibootInfo *mb)
 	cout<<"done\n";
 	
 	
-	//cout<<"\n\n"<<"You can satisfy your fingers by typing few keys\n";
+	cout<<"\n\n"<<"Enabling Interrupts\n";
 	enable();
-	cout<<"TESTING:sleeping for 10ms \n";
-	my_timer->sleep(1000);
-	cout<<" gotup from sleeping\n";
-	int i;
-	char name[100];
-	cout<<" TESTING cin \n";	
-	cout<<" Please enter your name ";	
-	cin>>name;
-	cout.SetTextColour(RED);
-	cout<<"hello "<<name<<" Welcome to NanOS \n";
-	cout.SetTextColour(WHITE);
 	cout<<"\n"<<"Dumping IRQ routines \n";
-	//int a=1/0; divide by 0 working.
 	IRQ::dump_irq_routines();
 	cout<<"\n";
-	//IDT::dump_isr_routines();
-	
+	cout<<"===============================\n";
+	cout<<"Available Memory : "<<(unsigned int)get_available_memory(mb)/1024<<"\n";
+	cout<<"     Used Memory : "<<(unsigned int)get_used_memory(mb)/1024<<"\n";
+	cout<<"===============================\n";	
+	//cout.flags(hex|showbase);
+	//extern int start,end;	
+	//cout<<"Kernel start "<<start<<" Kernel end "<<end<<" kernel length ="<<end-start<<"\n";
+	//cout.flags(dec);
+	cout<<"Starting Shell\n";	
 	shell *myshell =new shell;
 	myshell->start();
-	cout<<"reached End of kernel\n GOODBYE\n";
+	cout<<"\nReached End of kernel\n shoud not happen \n\nGOODBYE\n";
 	return 0;	
 }
 

@@ -11,12 +11,15 @@
 class shell
 {
 	public:
-		shell(){};
+		shell();
+		
 		~shell(){};
 		void help();
 		void about();
 		void start();
 	private:
-		int argcount(char *str);
+		static char *logo[6];
+
+		int get_num_args(const char *str);
 };
 

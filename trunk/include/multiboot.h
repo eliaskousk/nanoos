@@ -8,6 +8,8 @@
 #ifndef __MBOOT_H__
 #define __MBOOT_H__
 
+#define NULL 0
+
 #define MULTIBOOT_MEMORY	(1L<<0)
 #define MULTIBOOT_BOOT_DEVICE	(1L<<1)
 #define MULTIBOOT_CMDLINE	(1L<<2)
@@ -15,6 +17,7 @@
 #define MULTIBOOT_AOUT_SYMS	(1L<<4)
 #define MULTIBOOT_ELF_SHDR	(1L<<5)
 #define MULTIBOOT_MEM_MAP	(1L<<6)
+extern "C"{
 typedef struct multibootModule
 {
   /* physical start and end addresses of the module data itself.  */
@@ -73,5 +76,26 @@ typedef struct multibootInfo
   memoryMap *mmap_addr;
 } __attribute__ ((packed)) multibootInfo;
 
+unsigned long get_available_memory(multibootInfo *bootInfo);
+unsigned long get_used_memory(multibootInfo *bootInfo);
+void show_memory_map(multibootInfo *bootInfo);
+void show_elf_info(multibootInfo *bootInfo);
+
+}; //extern C ends
+/*class multiboot
+{
+	public:
+		multiboot(){bootInfo=NULL;};
+		multiboot(multibootInfo *mbinfo);
+			
+		~multiboot(){if(bootInfo) delete bootInfo; };
+		unsigned long get_available_memory();
+		unsigned long get_used_memory();
+		void show_memory_map();
+		void show_elf_info();
+	private:
+		multibootInfo *bootInfo;
+};
+*/
 
 #endif
