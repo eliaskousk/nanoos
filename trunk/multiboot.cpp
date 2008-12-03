@@ -74,4 +74,17 @@ void show_elf_info(multibootInfo *bootInfo)
 	cout<<"Kernel end address        => "<<(unsigned int)bootInfo->addr<<"\n";
 	cout.flags(dec);
 }
+extern struct multibootHeader mboot;
+unsigned long get_kernel_start()
+{
+	return(mboot.kernel_start);
+}
+unsigned long get_kernel_end()
+{
+	return(mboot.kernel_end);
+}
+unsigned long get_kernel_length()
+{
+	return(mboot.kernel_end-mboot.kernel_start);
+}	
 };//extern C ends

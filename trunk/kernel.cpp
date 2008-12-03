@@ -21,10 +21,12 @@
 #include "multiboot.h"
 
 extern "C" int kmain(multibootInfo *mb);
-
+extern struct multibootHeader mboot; //this comes from the loader.asm 
+unsigned int memupper; //kb of memory
 int kmain(multibootInfo *mb)
 {
 	construct();
+	memupper=mb->memoryUpper; //kb of memory stored for memory manager
 	cout<<"Nano OS is booting\n";
 	/*cout<<"    )               )  (   "<<"\n";
 	cout<<" ( /(            ( /(  )\\ )"<<"\n";
@@ -64,11 +66,12 @@ int kmain(multibootInfo *mb)
 	cout<<"Available Memory : "<<(unsigned int)get_available_memory(mb)/1024<<"\n";
 	cout<<"     Used Memory : "<<(unsigned int)get_used_memory(mb)/1024<<"\n";
 	cout<<"===============================\n";	
-	//cout.flags(hex|showbase);
+		
+	cout.flags(hex|showbase);
 	//extern int start,end;	
-	//cout<<"Kernel start "<<start<<" Kernel end "<<end<<" kernel length ="<<end-start<<"\n";
-	//cout.flags(dec);
-	cout<<"Starting Shell\n";	
+	cout<<"Kernel start "<<(unsigned int)get_kernel_start()<<" Kernel end "<<(unsigned int)get_kernel_end()<<" kernel length ="<<(unsigned int)get_kernel_length()<<"\n";
+	cout.flags(dec);
+	cout<<"\nStarting Shell\n";	
 	shell *myshell =new shell;
 	myshell->start();
 	cout<<"\nReached End of kernel\n shoud not happen \n\nGOODBYE\n";

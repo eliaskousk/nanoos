@@ -8,6 +8,8 @@
 
 #include "shell.h"
 #include "cmos.h"
+#include "gcpu.h"
+#include "multiboot.h"
 shell::shell()
 {
 	cout.clear();	
@@ -27,6 +29,7 @@ void shell::about()
 void shell::start()
 {
 	cout<<"Starting shell\n";
+	
 	while(1)
 	{
 		unsigned char *cmd;		
@@ -43,6 +46,10 @@ void shell::start()
 			get_cmos_date_time();
 		else if(String::strncmp((const char*)cmd,"hello",5)==0)
 			cout<<"Hi, how do you do???";
+		else if(String::strncmp((const char*)cmd,"cpuinfo",7)==0)
+			cpuinfo();
+		else if(String::strncmp((const char*)cmd,"meminfo",7)==0)
+			meminfo();
 		else
 			cout<<"Unknown Command\n";
 	}
@@ -54,7 +61,15 @@ char *shell::logo[6]={
 " |   |||  .|' ||   ||  ||  '|.     || .     '|| ",
 ".|.   '|  '|..'|' .||. ||.  ''|...|'  |'....|'  ",
 "================================================\n"};
-
+void shell::meminfo()
+{
+	extern unsigned int memupper;	
+	cout.flags(hex|showbase);
+	cout<<"Kernel starts at "<<(unsigned int)get_kernel_start()<<"\n";
+	cout<<"Kernel Ends at   "<<(unsigned int)get_kernel_end()<<"\n";
+	cout.flags(dec);
+	cout<<"Total Memory     "<<(memupper/1024)+1<<"\n";
+}
 void shell::help()
 {
 	cout<<"\n\tAvailable Commands ...\n\n";
@@ -63,5 +78,7 @@ void shell::help()
 	cout<<"\tdate  -> displays current date and time\n";
 	cout<<"\thelp  -> displays this help screen\n";
 	cout<<"\thello -> displays hi string\n";
+	cout<<"\tcpuinfo -> displays cpu info\n";
+	cout<<"\tmeminfo -> displays memory info\n";
 }
 

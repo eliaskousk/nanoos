@@ -41,6 +41,18 @@ typedef struct memoryMap
   unsigned long Type;
 } __attribute__ ((packed)) memoryMap;
 
+typedef struct multibootHeader
+{
+	unsigned long header_magic;    //multiboot header magic 0x1BADB002
+	unsigned long header_flags;    //flags enabled 
+	unsigned long ckecksum;        //checksum
+	unsigned long header_address;  //the location of this structure
+	unsigned long kernel_start;    // start of kernel .text section
+	unsigned long kernel_data_end; //end of kernel .bss
+	unsigned long kernel_end;      // kernel end address
+	unsigned long kernel_entry;    //kernel entry point
+} __attribute__ ((packed)) multibootHeader;
+
 typedef struct multibootInfo
 {
   /* these flags indicate which parts of the multiboot_info are valid;
@@ -80,6 +92,9 @@ unsigned long get_available_memory(multibootInfo *bootInfo);
 unsigned long get_used_memory(multibootInfo *bootInfo);
 void show_memory_map(multibootInfo *bootInfo);
 void show_elf_info(multibootInfo *bootInfo);
+unsigned long get_kernel_start();
+unsigned long get_kernel_end();
+unsigned long get_kernel_length();
 
 }; //extern C ends
 /*class multiboot

@@ -24,21 +24,22 @@ g++ -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -
 g++ -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -fno-rtti -fno-exceptions -c shell.cpp
 g++ -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -fno-rtti -fno-exceptions -c cmos.cpp
 g++ -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -fno-rtti -fno-exceptions -c multiboot.cpp
-
+g++ -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -fno-rtti -fno-exceptions -c gcpumore.cpp
 echo 
 echo -e "Assembling asm files using nasm"
 echo
 nasm -f elf loader.asm -o loader.o
 nasm -f elf isr_wrap.asm -o isr_wrap.o
+nasm -f elf gcpun.asm -o gcpun.o
 echo -e "removing old kernel"
 rm -f ./bin/nanos.elf
 echo
 echo -e "Linking kernel... please see map file for details"
 echo
 ld -T link.ld  -Map nano-os.map loader.o kernel.o video.o runtime.o string.o OStream.o kheap.o gdt.o idt.o isr_wrap.o irq.o timer.o kbd.o \
-      IStream.o shell.o cmos.o multiboot.o -o ./bin/nanos.elf 
+      IStream.o shell.o cmos.o multiboot.o gcpun.o gcpumore.o -o ./bin/nanos.elf 
 echo
-echo -e "removing object files"
+echo -e "removing object files and backup files"
 echo
 
 rm -f kernel.o
@@ -58,6 +59,10 @@ rm -f shell.o
 rm -f cmos.o
 rm -f runtime.o
 rm -f multiboot.o
+rm -f gcpumore.o
+rm -f gcpun.o
 
 rm -f *.*~
+rm -f include/*.*~
+
 echo -e "DONE : Please check bin directory for the resulting Kernel"
