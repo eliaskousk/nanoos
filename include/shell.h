@@ -8,6 +8,7 @@
 #include "OStream.h"
 #include "IStream.h"
 #include "string.h"
+#include "gcpu.h"
 class shell
 {
 	public:
@@ -17,6 +18,7 @@ class shell
 		void help();
 		void about();
 		void start();
+		void meminfo();
 	private:
 		static char *logo[6];
 
