@@ -37,7 +37,7 @@ echo
 echo -e "Linking kernel... please see map file for details"
 echo
 ld -T link.ld  -Map nano-os.map loader.o kernel.o video.o runtime.o string.o OStream.o kheap.o gdt.o idt.o isr_wrap.o irq.o timer.o kbd.o \
-      IStream.o shell.o cmos.o multiboot.o gcpun.o gcpumore.o -o ./bin/nanos.elf 
+      IStream.o cmos.o multiboot.o gcpun.o gcpumore.o shell.o -o ./bin/nanos.elf 
 echo
 echo -e "removing object files and backup files"
 echo
