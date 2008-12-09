@@ -9,7 +9,6 @@
 
 #include "multiboot.h"
 #include "runtime.h"
-#include "video.h"
 #include "OStream.h"
 #include "gdt.h"
 #include "idt.h"
@@ -19,14 +18,16 @@
 #include "IStream.h"
 #include "shell.h"
 #include "multiboot.h"
+#include "kheap.h"
 
 extern "C" int kmain(multibootInfo *mb);
 extern struct multibootHeader mboot; //this comes from the loader.asm 
-unsigned int memupper; //kb of memory
+unsigned int memend; 
+unsigned int kend;
 int kmain(multibootInfo *mb)
 {
 	construct();
-	memupper=mb->memoryUpper; //kb of memory stored for memory manager
+	memend=mb->memoryUpper*1024+0x100000; //memory end upper memory in bytes +1MB
 	cout<<"Nano OS is booting\n";
 	/*cout<<"    )               )  (   "<<"\n";
 	cout<<" ( /(            ( /(  )\\ )"<<"\n";
@@ -62,19 +63,36 @@ int kmain(multibootInfo *mb)
 	cout<<"\n"<<"Dumping IRQ routines \n";
 	IRQ::dump_irq_routines();
 	cout<<"\n";
+	
+	
 	cout<<"===============================\n";
 	cout<<"Available Memory : "<<(unsigned int)get_available_memory(mb)/1024<<"\n";
 	cout<<"     Used Memory : "<<(unsigned int)get_used_memory(mb)/1024<<"\n";
 	cout<<"===============================\n";	
 		
 	cout.flags(hex|showbase);
-	//extern int start,end;	
-	cout<<"Kernel start "<<(unsigned int)get_kernel_start()<<" Kernel end "<<(unsigned int)get_kernel_end()<<" kernel length ="<<(unsigned int)get_kernel_length()<<"\n";
+	kend=get_kernel_end();
+	cout<<"Kernel start "<<(unsigned int)get_kernel_start()<<" Kernel end "<<(unsigned int)kend<<" kernel length ="<<(unsigned int)get_kernel_length()<<"\n";
 	cout.flags(dec);
 	cout<<"\nStarting Shell\n";	
 	shell *myshell =new shell;
 	myshell->start();
 	cout<<"\nReached End of kernel\n shoud not happen \n\nGOODBYE\n";
+	cout<<"testing new delete" <<"\n";
+	int *a,*b,*c;
+	dump_heap();
+	a = (int *)kmalloc(10*sizeof(int));
+	dump_heap();
+	b = (int *)kmalloc(20*sizeof(int));
+	dump_heap();
+	c = (int *)kmalloc(1000*sizeof(int));
+	dump_heap();
+	kfree(b);
+	dump_heap();
+	kfree(a);
+	dump_heap();
+	a = (int *)kmalloc(40*sizeof(int));
+	dump_heap;
 	return 0;	
 }
 

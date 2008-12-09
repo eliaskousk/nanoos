@@ -51,7 +51,7 @@ void shell::start()
 		else if(String::strncmp((const char*)cmd,"meminfo",7)==0)
 			meminfo();
 		else
-			cout<<"Unknown Command\n";
+			cout<<"Unknown Command\n For available commands type help\n";
 	}
 }
 char *shell::logo[6]={
@@ -63,12 +63,12 @@ char *shell::logo[6]={
 "================================================\n"};
 void shell::meminfo()
 {
-	extern unsigned int memupper;	
+	extern unsigned int memend;	
 	cout.flags(hex|showbase);
 	cout<<"Kernel starts at "<<(unsigned int)get_kernel_start()<<"\n";
 	cout<<"Kernel Ends at   "<<(unsigned int)get_kernel_end()<<"\n";
 	cout.flags(dec);
-	cout<<"Total Memory     "<<(memupper/1024)+1<<"\n";
+	cout<<"Total Memory     "<<(memend/0x100000)+1<<" MB\n";
 }
 void shell::help()
 {
