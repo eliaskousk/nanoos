@@ -10,6 +10,7 @@
 #include "cmos.h"
 #include "gcpu.h"
 #include "multiboot.h"
+#include "fdc.h"
 shell::shell()
 {
 	cout.clear();	
@@ -50,6 +51,13 @@ void shell::start()
 			cpuinfo();
 		else if(String::strncmp((const char*)cmd,"meminfo",7)==0)
 			meminfo();
+		else if(String::strncmp((const char*)cmd,"detectfd",8)==0)
+			{
+				if(flseek(1)==true)
+				cout<<"Found a floppy inserted\n" ;
+				else
+				cout<<"No floppy inserted\n";
+			}
 		else
 			cout<<"Unknown Command\n For available commands type help\n";
 	}
@@ -73,12 +81,13 @@ void shell::meminfo()
 void shell::help()
 {
 	cout<<"\n\tAvailable Commands ...\n\n";
-	cout<<"\tabout -> about the NanOS\n";
-	cout<<"\tclear -> clears the screen\n";
-	cout<<"\tdate  -> displays current date and time\n";
-	cout<<"\thelp  -> displays this help screen\n";
-	cout<<"\thello -> displays hi string\n";
-	cout<<"\tcpuinfo -> displays cpu info\n";
-	cout<<"\tmeminfo -> displays memory info\n";
+	cout<<"\tabout    -> about the NanOS\n";
+	cout<<"\tclear    -> clears the screen\n";
+	cout<<"\tdate     -> displays current date and time\n";
+	cout<<"\thelp     -> displays this help screen\n";
+	cout<<"\thello    -> displays hi string\n";
+	cout<<"\tcpuinfo  -> displays cpu info\n";
+	cout<<"\tmeminfo  -> displays memory info\n";
+	cout<<"\tdetectfd -> detects if a floppy is inserted\n";
 }
 
