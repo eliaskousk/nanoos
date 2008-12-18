@@ -19,7 +19,7 @@
 #include "shell.h"
 #include "multiboot.h"
 #include "kheap.h"
-
+#include "fdc.h"
 extern "C" int kmain(multibootInfo *mb);
 extern struct multibootHeader mboot; //this comes from the loader.asm 
 unsigned int memend; 
@@ -74,11 +74,12 @@ int kmain(multibootInfo *mb)
 	kend=get_kernel_end();
 	cout<<"Kernel start "<<(unsigned int)get_kernel_start()<<" Kernel end "<<(unsigned int)kend<<" kernel length ="<<(unsigned int)get_kernel_length()<<"\n";
 	cout.flags(dec);
+	init_floppy();	
 	cout<<"\nStarting Shell\n";	
 	shell *myshell =new shell;
 	myshell->start();
 	cout<<"\nReached End of kernel\n shoud not happen \n\nGOODBYE\n";
-	cout<<"testing new delete" <<"\n";
+	/*cout<<"testing new delete" <<"\n";
 	int *a,*b,*c;
 	dump_heap();
 	a = (int *)kmalloc(10*sizeof(int));
@@ -92,7 +93,7 @@ int kmain(multibootInfo *mb)
 	kfree(a);
 	dump_heap();
 	a = (int *)kmalloc(40*sizeof(int));
-	dump_heap;
+	dump_heap;*/
 	return 0;	
 }
 

@@ -25,6 +25,9 @@ g++ -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -
 g++ -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -fno-rtti -fno-exceptions -c cmos.cpp
 g++ -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -fno-rtti -fno-exceptions -c multiboot.cpp
 g++ -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -fno-rtti -fno-exceptions -c gcpumore.cpp
+g++ -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -fno-rtti -fno-exceptions -c dma.c
+g++ -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -fno-rtti -fno-exceptions -c fdc.c
+
 echo 
 echo -e "Assembling asm files using nasm"
 echo
@@ -37,7 +40,7 @@ echo
 echo -e "Linking kernel... please see map file for details"
 echo
 ld -T link.ld  -Map nano-os.map loader.o kernel.o video.o runtime.o string.o OStream.o kheap.o gdt.o idt.o isr_wrap.o irq.o timer.o kbd.o \
-      IStream.o cmos.o multiboot.o gcpun.o gcpumore.o shell.o -o ./bin/nanos.elf 
+      IStream.o cmos.o multiboot.o gcpun.o gcpumore.o shell.o dma.o fdc.o -o ./bin/nanos.elf 
 echo
 echo -e "removing object files and backup files"
 echo
@@ -61,6 +64,8 @@ rm -f runtime.o
 rm -f multiboot.o
 rm -f gcpumore.o
 rm -f gcpun.o
+rm -f dma.o
+rm -f fdc.o
 
 rm -f *.*~
 rm -f include/*.*~
