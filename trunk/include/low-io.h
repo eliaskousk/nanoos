@@ -44,6 +44,22 @@ inline static void outportl(unsigned short _port, unsigned int _data)
 {
 	__asm__ __volatile__ ("outl %%eax, %%dx" : : "d" (_port), "a" (_data));
 }
+inline static void insw(short port, unsigned short *data, unsigned count)
+{
+	for(; count != 0; count--)
+	{
+		*data = inportw(port);
+		data++;
+	}
+}
+inline static void outsw(short port, unsigned short *data, unsigned count)
+{
+	for(; count != 0; count--)
+	{
+		outportw(port, *data);
+		data++;
+	}
+}
 inline static void enable()
 {
 	__asm__ __volatile__ ("sti": : );
@@ -58,6 +74,6 @@ inline static void halt()
 {
 	__asm__ __volatile__ ("hlt" : : );
 } /*Halts cpu*/
-
+#define min(a,b)    (((a) < (b)) ? (a) : (b))
 #endif
 
