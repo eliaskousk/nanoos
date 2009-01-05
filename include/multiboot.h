@@ -95,7 +95,7 @@ void show_elf_info(multibootInfo *bootInfo);
 unsigned long get_kernel_start();
 unsigned long get_kernel_end();
 unsigned long get_kernel_length();
-
+//void print_boot_dev(multibootInfo *bootInfo);
 }; //extern C ends
 /*class multiboot
 {

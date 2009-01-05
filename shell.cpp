@@ -10,7 +10,9 @@
 #include "cmos.h"
 #include "gcpu.h"
 #include "multiboot.h"
-#include "fdc.h"
+//#include "fdc.h"
+//#include "drive.h"
+#include "floppy.h"
 shell::shell()
 {
 	cout.clear();	
@@ -52,11 +54,15 @@ void shell::start()
 		else if(String::strncmp((const char*)cmd,"meminfo",7)==0)
 			meminfo();
 		else if(String::strncmp((const char*)cmd,"detectfd",8)==0)
+		{
+			unsigned char buffer[512]={0};		
+			flpdrvs[0]->floppy_read_block(1,buffer);
+			dump(buffer,128);
+		}			
+		else if(String::strncmp((const char*)cmd,"bootdev",7)==0)
 			{
-				if(flseek(1)==true)
-				cout<<"Found a floppy inserted\n" ;
-				else
-				cout<<"No floppy inserted\n";
+				extern char *boot_dev;
+				cout<<(char *)boot_dev<<"\n";
 			}
 		else
 			cout<<"Unknown Command\n For available commands type help\n";

@@ -90,4 +90,60 @@ void _dma_xfer(uchar DMA_channel, unsigned char page, unsigned int offset, unsig
     /* Re-enable interrupts before we leave. */
     asm("sti");
 }
+int dma_read(unsigned char chan, unsigned long linear,unsigned long tc)
+{
+	unsigned char scaled_chan, cmd;
+
+/* validate chan */
+	if(chan > 3)
+		return -1;
+/* set cmd byte  */
+	cmd = DMA_READ + (chan & 3);
+/* make sure transfer doesn't exceed 16 meg or cross a 64K boundary */
+	if(linear + tc >=  0x1000000L)
+		return -1;
+	if((linear & 0x10000L) != ((linear + tc) & 0x10000L))
+		return -1;
+/* 8-bit transfers */
+	scaled_chan = chan << 1;
+	outportb(DMA_FF, 0);		/* set base adr */
+	outportb(DMA_BASE + scaled_chan, linear);
+	outportb(DMA_BASE + scaled_chan, linear >> 8);
+	outportb(DMA_BASE + 1 +		/* set xfer len */
+		scaled_chan, tc);
+	outportb(DMA_BASE + 1 + scaled_chan, tc >> 8);
+	outportb(_page_reg_ioadr[chan],	/* set page */
+		linear >> 16);
+	outportb(DMA_MODE, cmd);	/* do it */
+	outportb(DMA_MASK, chan);
+	return 0;
+}
+int dma_write(unsigned char chan, unsigned long linear,unsigned long tc)
+{
+	unsigned char scaled_chan, cmd;
+
+/* validate chan */
+	if(chan > 3)
+		return -1;
+/* set cmd byte  */
+	cmd = DMA_WRITE + (chan & 3);
+/* make sure transfer doesn't exceed 16 meg or cross a 64K boundary */
+	if(linear + tc >=  0x1000000L)
+		return -1;
+	if((linear & 0x10000L) != ((linear + tc) & 0x10000L))
+		return -1;
+/* 8-bit transfers */
+	scaled_chan = chan << 1;
+	outportb(DMA_FF, 0);		/* set base adr */
+	outportb(DMA_BASE + scaled_chan, linear);
+	outportb(DMA_BASE + scaled_chan, linear >> 8);
+	outportb(DMA_BASE + 1 +		/* set xfer len */
+		scaled_chan, tc);
+	outportb(DMA_BASE + 1 + scaled_chan, tc >> 8);
+	outportb(_page_reg_ioadr[chan],	/* set page */
+		linear >> 16);
+	outportb(DMA_MODE, cmd);	/* do it */
+	outportb(DMA_MASK, chan);
+	return 0;
+}
 

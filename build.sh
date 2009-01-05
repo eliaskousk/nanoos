@@ -25,8 +25,11 @@ g++ -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -
 g++ -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -fno-rtti -fno-exceptions -c cmos.cpp
 g++ -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -fno-rtti -fno-exceptions -c multiboot.cpp
 g++ -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -fno-rtti -fno-exceptions -c gcpumore.cpp
-g++ -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -fno-rtti -fno-exceptions -c dma.c
-g++ -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -fno-rtti -fno-exceptions -c fdc.c
+g++ -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -fno-rtti -fno-exceptions -c dma.cpp
+#g++ -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -fno-rtti -fno-exceptions -c fdc.cpp
+#g++ -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -fno-rtti -fno-exceptions -c bddl.cpp
+#g++ -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -fno-rtti -fno-exceptions -c floppy.cpp
+g++ -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -fno-rtti -fno-exceptions -c ide.cpp
 
 echo 
 echo -e "Assembling asm files using nasm"
@@ -40,33 +43,12 @@ echo
 echo -e "Linking kernel... please see map file for details"
 echo
 ld -T link.ld  -Map nano-os.map loader.o kernel.o video.o runtime.o string.o OStream.o kheap.o gdt.o idt.o isr_wrap.o irq.o timer.o kbd.o \
-      IStream.o cmos.o multiboot.o gcpun.o gcpumore.o shell.o dma.o fdc.o -o ./bin/nanos.elf 
+      IStream.o cmos.o multiboot.o gcpun.o gcpumore.o dma.o ide.o -o ./bin/nanos.elf 
 echo
 echo -e "removing object files and backup files"
 echo
 
-rm -f kernel.o
-rm -f video.o
-rm -f OStream.o
-rm -f string.o
-rm -f loader.o
-rm -f gdt.o
-rm -f idt.o
-rm -f isr_wrap.o
-rm -f irq.o
-rm -f kheap.o
-rm -f kbd.o
-rm -f timer.o
-rm -f IStream.o
-rm -f shell.o
-rm -f cmos.o
-rm -f runtime.o
-rm -f multiboot.o
-rm -f gcpumore.o
-rm -f gcpun.o
-rm -f dma.o
-rm -f fdc.o
-
+rm -f *.o
 rm -f *.*~
 rm -f include/*.*~
 

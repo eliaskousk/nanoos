@@ -87,4 +87,9 @@ unsigned long get_kernel_length()
 {
 	return(mboot.kernel_end-mboot.kernel_start);
 }	
+/*void print_boot_dev(multibootInfo *bootInfo)
+{
+	cout<<(char*)bootInfo->bootDevice<<"\n";
+}*/
+
 };//extern C ends
