@@ -73,12 +73,12 @@ int kmain(multibootInfo *mb)
 	cout<<"\n\n"<<"Enabling Interrupts\n";
 	enable();
 	init_disks();
-	unsigned char read_buf[512];
-	if(disks[0])
-	{
-		disks[0]->read_sector(1,read_buf);
-		hex_dump(read_buf,512);
-	}	
+	//cout<<"Finished init_disks\n";
+	//unsigned char read_buf[512];
+	//if(disks[0])
+	//{
+	//	disks[0]->disk_info();
+	//}	
 	//my_req.buf=read_buf;
 	//if(ide0->ide_read_sectors(&my_req))
 	//	dump(read_buf,128); 
@@ -87,14 +87,14 @@ int kmain(multibootInfo *mb)
 	//IDE *ide3=new IDE(0x8000,0x170,0x3f6,8,1,0xb0);
 	//cout<<"\n\n"<<"Enabling Interrupts\n";
 	//enable();
-	cout<<"\n"<<"Dumping IRQ routines \n";
-	IRQ::dump_irq_routines();
-	cout<<"\n";
+	//cout<<"\n"<<"Dumping IRQ routines \n";
+	//IRQ::dump_irq_routines();
+	//cout<<"\n";
 	cout<<"\nStarting Shell\n";	
-	//shell *myshell =new shell;
-	//myshell->start();
+	shell *myshell =new shell;
+	myshell->start();
 	
-	cout<<(char *)mb->commandLine<<"\n";
+	//cout<<(char *)mb->commandLine<<"\n";
 	cout<<"\nReached End of kernel\n shoud not happen \n\nGOODBYE\n";
 	/*cout<<"testing new delete" <<"\n";
 	int *a,*b,*c;

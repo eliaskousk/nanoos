@@ -91,10 +91,24 @@ typedef struct
 	unsigned use_multmode : 1;
 	unsigned short mult_count;
 } ide_t;
+typedef struct part_entry
+{
+	unsigned int boot_flag:8;
+	unsigned int beg_head:8;
+	unsigned int beg_sect:8;
+	unsigned int beg_cyl:8;
+	unsigned int part_type:8;
+	unsigned int end_head:8;
+	unsigned int end_sect:8;
+	unsigned int end_cyl:8;
+	unsigned int  beg_lba;
+	unsigned int  tot_sect;
+}part_entry_t __attribute__((packed));
 class disk
 {
 	private:
 		ide_t physical;
+		part_entry_t part_table[4]; //drive has 4 primary partitions
 		//unsigned char sect_buf[512]={0};
 	public:
 		void populate_ide_disk(unsigned short which, unsigned short unit);
@@ -108,6 +122,7 @@ class disk
 		~disk(){};
 		static void disk_handler(IDT::regs *r);
 		void disk_info();
+		void populate_partitions();
 };
 extern disk *disks[4];
 void init_disks();

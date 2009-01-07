@@ -24,7 +24,15 @@ OStream& OStream::operator <<(char *str)
 
 OStream& OStream::operator <<(char c)
 {
-	putchar(c);
+	char buf[3];
+	if(current_flags & hex)
+	{
+		char buf[3];
+		String::itoa(buf, 16, c);
+		write(buf);
+	}
+	else
+		putchar(c);
 	return *this;
 }
 

@@ -101,6 +101,7 @@ int disk::identify()
 		cout<<"unknown drive type\n";
 		return -1;
 	}
+	cout.flags(dec);
 	outportb(this->physical.blkdev.io.adr[0]  + CMD_REG, id_cmd);
 	my_timer->sleep(10);
 	if(wait_ready(this->physical.blkdev.io.adr[0],1000)!=1)
@@ -117,6 +118,7 @@ int disk::identify()
 	this->physical.blkdev.cyls = read_le16(buf + 2);
 	this->physical.blkdev.heads = read_le16(buf + 6);
 	this->physical.blkdev.sectors = read_le16(buf + 12);
+	
 	cout<<"\n CHS="<<physical.blkdev.cyls<<":"<<physical.blkdev.heads<<":"<<physical.blkdev.sectors<<"\n";
 	if((buf[99] & 1) != 0)
 	{
@@ -142,7 +144,8 @@ int disk::identify()
 //read a sector
 void disk::read_sector(unsigned int blk,unsigned char *read_buf)
 {
-	unsigned char head,lo,mid,hi,tmp,drv;	
+	unsigned char head,lo,mid,hi,tmp,drv;
+	unsigned short stmp;	
 	int i=0;
 	while(!wait_ready(physical.blkdev.io.adr[0],1000));
 	outportb(physical.blkdev.io.adr[0]+ERR_REG,0);
@@ -168,11 +171,11 @@ void disk::read_sector(unsigned int blk,unsigned char *read_buf)
 	outportb(physical.blkdev.io.adr[0]+CMD_REG,ATA_CMD_READ);
 //wazit until the DATA REQUEST status is gone
 	while (!(inportb(physical.blkdev.io.adr[0]+STATUS_REG) & STA_DRQ));
-	for (i = 0; i < 256; i++)
+	for (i = 0; i <256; i++)
 	{
-		tmp = inportw(physical.blkdev.io.adr[0]+DATA_REG);
-		read_buf[i * 2] =  tmp;
-		read_buf[(i*2)+1] = (tmp >> 8);
+		stmp = inportw(physical.blkdev.io.adr[0]+DATA_REG);
+		read_buf[i * 2] =  stmp;
+		read_buf[(i*2)+1] = (stmp >> 8);
 	}
 	//read_sect(port,read_buf);
 	//ata_write_cmd(port,0x21);
@@ -186,6 +189,8 @@ void disk::disk_handler(IDT::regs *r)
 
 void disk::disk_info()
 {
+	cout<<"=========DISK INFO============\n";
+	cout<<"Disk is ";	
 	if(physical.blkdev.io.adr[0]==0x1f0)
 		cout<<"primary ";
 	else
@@ -195,8 +200,64 @@ void disk::disk_info()
 	else
 		cout<<"slave : ";	
 	cout<<"Geometry CHS= "<<physical.blkdev.cyls<<":"<<physical.blkdev.heads<<":"<<physical.blkdev.sectors<<"\n";
-}
+	cout<<"=========Partitions===========\n";
+	for(int i=0;i<4;i++)
+	{
+		if(part_table[i].tot_sect>0)
+		{
+			unsigned int start_head,end_head,start_sect,start_cyl,end_sect,end_cyl;
+			start_head=part_table[i].beg_head;
+			end_head=part_table[i].end_head;
+			start_sect=part_table[i].beg_sect;
+			start_cyl=part_table[i].beg_cyl;
+			start_cyl +=(start_sect&192)<<2;
+			start_sect &=63;
+			end_sect=part_table[i].end_sect;
+			end_cyl=part_table[i].end_cyl+(end_sect&192)<<2;
+			end_sect &=63;
+			
+			cout<<"Part["<<i<<"] starts at "<<"H="<<start_head<<" S="<<start_sect<<" C="<<start_cyl;
+			cout<<"\n        ends at"<<" H="<<end_head<<" S="<<end_sect<<" C="<<end_cyl;		
+			cout<<" LBA= "<<part_table[i].beg_lba<<" and spans "<<part_table[i].tot_sect<<" sectors ";
+			if(part_table[i].boot_flag==0x80) cout<<"Bootable\n";
+			else
+			cout<<"\n";
+		}
+	}
+	cout<<"=============================\n";
 
+}
+void disk::populate_partitions()
+{
+	unsigned char mbr[512]={'\0',};
+	unsigned char parttbl[64]={'\0',};
+	read_sector(1,mbr);
+	String::memcpy((char *)parttbl,(char *)(mbr+0x1be),64);
+	if(*(unsigned char *)(mbr+0x1fe)!=0x55 && *(unsigned char *)(mbr+0x1ff)!=0xaa) //check if the magic signature is at the end of MBR
+	{
+		cout<<"Invalid MBR or corrupted Partition Table\n";
+		return;
+	}
+	//hex_dump(mbr,512);
+	//cout<<sizeof(part_entry_t)<<"\n";
+	for(int i=0;i<4;i++)
+	{
+		String::memset((unsigned char *)&part_table[i],0,sizeof(part_entry_t));
+		String::memcpy((char *)&part_table[i],(char *)(parttbl+(i*16)),sizeof(part_entry_t));
+		/*part_table[i].boot_flag=*(parttbl+(i*16));
+		part_table[i].beg_head=*(parttbl+(i*16)+1);
+		part_table[i].beg_sect=*(parttbl+(i*16)+2);
+		part_table[i].beg_cyl=*(parttbl+(i*16)+3);
+		part_table[i].part_type=*(parttbl+(i*16)+4);
+		part_table[i].end_head=*(parttbl+(i*16)+5);
+		part_table[i].end_sect=*(parttbl+(i*16)+6);
+		part_table[i].end_cyl=*(parttbl+(i*16)+7);
+		part_table[i].beg_lba=*(int *)(parttbl+(i*16)+8);
+		part_table[i].tot_sect=*(int *)(parttbl+(i*16)+12);*/
+		//cout<<i<<"  ";
+		//dump((parttbl+i*16),16);
+	}
+}
 //bellow functions are not in the class they are generic
 //int ide_status_ready(ide_t *ide,unsigned int timeout)
 //{
@@ -374,6 +435,7 @@ void init_disks()
 				which=ATA_BASE_SEC;
 			disks[i]->populate_ide_disk(which,unit);
 			disks[i]->identify();
+			disks[i]->populate_partitions();
 		}
 		else
 			disks[i]=NULL;
@@ -388,11 +450,12 @@ int MIN ( int a, int b)
 }
 void hex_dump (const unsigned char *data, int len)
 {
-  size_t pos = 0;
+        int pos = 0;
 	int i;
-	cout.flags(hex|showbase);
+	
   while (pos < len)
     {
+	cout.flags(hex);
       cout<< pos<<"  ";
 
       const size_t chunk = MIN (len - pos, 16);
@@ -405,9 +468,10 @@ void hex_dump (const unsigned char *data, int len)
 
      // if (chunk < 16)
 	//printf ("%*s", (int) ((16 - chunk) * 2 + (16 - chunk + 3) / 4), "");
-
+	
       for ( i = 0; i < chunk; ++i)
 	{
+		cout.flags(dec);
 	  unsigned char b = data[pos + i];
 	   if(b<' ')
 		cout<<'.';
