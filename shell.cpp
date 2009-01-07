@@ -12,7 +12,8 @@
 #include "multiboot.h"
 //#include "fdc.h"
 //#include "drive.h"
-#include "floppy.h"
+//#include "floppy.h"
+#include "ide.h"
 shell::shell()
 {
 	cout.clear();	
@@ -53,12 +54,20 @@ void shell::start()
 			cpuinfo();
 		else if(String::strncmp((const char*)cmd,"meminfo",7)==0)
 			meminfo();
-		else if(String::strncmp((const char*)cmd,"detectfd",8)==0)
+		else if(String::strncmp((const char*)cmd,"hdinfo",6)==0)
+		{
+			for(int i=0;i<4;i++)
+			if(disks[i])
+			{
+				disks[i]->disk_info();
+			}
+		}
+		/*else if(String::strncmp((const char*)cmd,"detectfd",8)==0)
 		{
 			unsigned char buffer[512]={0};		
 			flpdrvs[0]->floppy_read_block(1,buffer);
 			dump(buffer,128);
-		}			
+		}*/			
 		else if(String::strncmp((const char*)cmd,"bootdev",7)==0)
 			{
 				extern char *boot_dev;
@@ -94,6 +103,6 @@ void shell::help()
 	cout<<"\thello    -> displays hi string\n";
 	cout<<"\tcpuinfo  -> displays cpu info\n";
 	cout<<"\tmeminfo  -> displays memory info\n";
-	cout<<"\tdetectfd -> detects if a floppy is inserted\n";
+	cout<<"\thdinfo   -> displays hard disk info if any\n";
 }
 
