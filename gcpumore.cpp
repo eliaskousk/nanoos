@@ -12,6 +12,7 @@
 #include "string.h"
 #include "gcpu.h"
 #include "OStream.h"
+#include "kheap.h"
 #ifndef TRUE
 	#define TRUE	1
 	#define FALSE	0
@@ -100,8 +101,10 @@ void cyrix_type(cpu_t *mcpu)
 void capability(cpu_inf t,cpu_t *mcpu)
 {
 	unsigned long C,Q;
+	
 	if(String::strcmp(mcpu->cpu_vendor, "GenuineIntel")==0)
 	{
+			
 		String::strcpy(mcpu->Comp1[0],"FPU"); //Floating Point Unit
 		String::strcpy(mcpu->Comp1[1],"VME"); //Virtual Mode Extension
 		String::strcpy(mcpu->Comp1[2],"DE"); //Debugging Extension
@@ -137,16 +140,19 @@ void capability(cpu_inf t,cpu_t *mcpu)
 	}
 	else if(String::strcmp(mcpu->cpu_vendor, "AuthenticAMD")==0)
 	{
+			
 		String::strcpy(mcpu->Comp1[0],"FPU"); //Floating Point Unit
 		String::strcpy(mcpu->Comp1[1],"VME"); //Virtual Mode Extension
 		String::strcpy(mcpu->Comp1[2],"DE"); //Debugging Extension
 		String::strcpy(mcpu->Comp1[3],"PSE"); //Page Size Extension
 		String::strcpy(mcpu->Comp1[4],"TSC"); //Time Stamp Counter
+			
 		String::strcpy(mcpu->Comp1[5],"MSR"); //Model Specific Registers
 		String::strcpy(mcpu->Comp1[6],"PAE"); //Physical Address Extesnion
 		String::strcpy(mcpu->Comp1[7],"MCE"); //Machine Check Extension
 		String::strcpy(mcpu->Comp1[8],"CX8"); //CMPXCHG8 Instruction
 		String::strcpy(mcpu->Comp1[9],"APIC"); //On-chip APIC Hardware
+		
 		String::strcpy(mcpu->Comp1[10],""); //Reserved
 		String::strcpy(mcpu->Comp1[11],"SEP"); //SYSENTER SYSEXIT
 		String::strcpy(mcpu->Comp1[12],"MTRR"); //Machine Type Range Registers
@@ -163,14 +169,16 @@ void capability(cpu_inf t,cpu_t *mcpu)
 		String::strcpy(mcpu->Comp1[23],"MMX"); //MMX Technology
 		String::strcpy(mcpu->Comp1[24],"FXSR"); //FXSAVE FXRSTOR (Fast save and restore)
 		String::strcpy(mcpu->Comp1[25],"SSE"); //Streaming SIMD Extensions
+		
 		String::strcpy(mcpu->Comp1[26],""); //?
 		String::strcpy(mcpu->Comp1[27],""); //?
 		String::strcpy(mcpu->Comp1[28],""); //?
 		String::strcpy(mcpu->Comp1[29],""); //?
 		String::strcpy(mcpu->Comp1[30],"3DNowExt"); //3DNow Instruction Extensions (I made this short up, correct?)
 		String::strcpy(mcpu->Comp1[31],"3DNow"); //3DNow Instructions (I made this short up, correct?)
+		
 	}
-
+	
 	for(C=1, Q=0;Q<32;C*=2, Q++)
 	{
 		mcpu->dComp1Supported[Q]=(t.reg_edx&C)!=0?1:0;
@@ -191,7 +199,7 @@ void check_cpu(cpu_t *mcpu) /* This is the function to call to set the globals *
 	long vendor_temp[3];
 	cpu_inf t;
 	String::memset(mcpu->cpu_vendor, 0, 16);
-	if (_is_cpuid_supported ())
+	if (_is_cpuid_supported())
 	{
 		mcpu->cpu_cpuid = TRUE;
 		t.reg_eax = t.reg_ebx = t.reg_ecx = t.reg_edx = 0;
@@ -224,7 +232,9 @@ void check_cpu(cpu_t *mcpu) /* This is the function to call to set the globals *
 			}
 			mcpu->cpu_fpu = (t.reg_edx & 1 ? TRUE : FALSE);
 			mcpu->cpu_mmx = (t.reg_edx & 0x800000 ? TRUE: FALSE);
+			
 			capability(t,mcpu);
+			
 		}
 	}
 	else
@@ -262,7 +272,8 @@ void check_cpu(cpu_t *mcpu) /* This is the function to call to set the globals *
 
 int cpuinfo(void) /* Sample program */
 {
-	cpu_t *my_cpu =new cpu_t;
+	cpu_t *my_cpu = (cpu_t *)kmalloc(sizeof(cpu_t));
+	
 	check_cpu(my_cpu);
 	cout<<"CPU has cpuid instruction? ";	
 	if(my_cpu->cpu_cpuid)

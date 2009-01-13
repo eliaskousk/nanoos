@@ -30,6 +30,7 @@ char boot_dev[4];
 int kmain(multibootInfo *mb)
 {
 	construct();
+	char ans;	
 	memend=mb->memoryUpper*1024+0x100000; //memory end upper memory in bytes +1MB
 	cout<<"Nano OS is booting\n";
 	/*cout<<"    )               )  (   "<<"\n";
@@ -87,9 +88,11 @@ int kmain(multibootInfo *mb)
 	//IDE *ide3=new IDE(0x8000,0x170,0x3f6,8,1,0xb0);
 	//cout<<"\n\n"<<"Enabling Interrupts\n";
 	//enable();
-	//cout<<"\n"<<"Dumping IRQ routines \n";
-	//IRQ::dump_irq_routines();
-	//cout<<"\n";
+	cout<<"\n"<<"Dumping IRQ routines \n";
+	IRQ::dump_irq_routines();
+	cout<<"\n";
+	cout<<"Press any key to start shell";
+	cin>>ans;
 	cout<<"\nStarting Shell\n";	
 	shell *myshell =new shell;
 	myshell->start();
