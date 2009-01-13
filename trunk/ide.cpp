@@ -39,6 +39,9 @@ int disk::wait_ready(unsigned short port,unsigned int timeout)
 		stat=ata_read_status(port);
 		if(!stat) return 1;
 		if(stat & (STA_DRDY|STA_BSY)==STA_DRDY) return 1;
+		stat=ata_read_alt_status(port);
+		if(!stat) return 1;
+		if(stat & (STA_DRDY|STA_BSY)==STA_DRDY) return 1;
 		timeout--;
 	}
 	return -1;
@@ -272,7 +275,7 @@ void disk::populate_partitions()
 //port = 1f0 for primary controller detection and 170 for secondary controller	
 int detect_cntrlr(unsigned short port)
 {
-	unsigned char temp1,temp2;
+	unsigned char temp1,temp2,stat,timeout=255;
 	outportb(port+LBA_LOW_REG,0x55);
 	outportb(port+LBA_MID_REG,0xAA);
 	temp1=inportb(port+LBA_LOW_REG);
@@ -283,10 +286,26 @@ int detect_cntrlr(unsigned short port)
 		my_timer->sleep(10);
 		outportb(port + DEV_CTRL_REG, 0x00);
 		my_timer->sleep(10);
+		//while (!(inportb(port+STATUS_REG) & STA_DRDY));
+		//qemu needs bellow vvvv		
+		while(timeout)
+		{
+			stat=ata_read_status(port);
+			if(!stat) return 1;
+			if(stat & (STA_DRDY|STA_BSY)==STA_DRDY) return 1;
+			stat=ata_read_alt_status(port);
+			if(!stat) return 1;
+			if(stat & (STA_DRDY|STA_BSY)==STA_DRDY) return 1;
+			timeout--;
+			my_timer->sleep(10);
+		}
+		//qemu needs ^^^^
+		//bochs needs this vvvv
 		while (!(inportb(port+STATUS_REG) & STA_DRDY));
 		return 1;
+		//bochs needs ^^^^
 	}
-	else
+	//else
 		return 0;
 }
 /*

@@ -32,7 +32,7 @@ typedef struct cpu
 				/* if TRUE, you can trust the information returned */
 				/* if FALSE, be careful... ;) */
 	int	cpuid_levels;	
-	char *Comp1[32];
+	char Comp1[10][32];
 	int dComp1Supported[32];
 	int 	dBrand,
 		dCacheLineSize,
