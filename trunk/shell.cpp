@@ -10,10 +10,11 @@
 #include "cmos.h"
 #include "gcpu.h"
 #include "multiboot.h"
-//#include "fdc.h"
-//#include "drive.h"
-//#include "floppy.h"
 #include "ide.h"
+//#include "fdc.h"
+#include "drive.h"
+//#include "floppy.h"
+
 shell::shell()
 {
 	cout.clear();	
@@ -49,7 +50,7 @@ void shell::start()
 		else if(String::strncmp((const char*)cmd,"date",4)==0)
 			get_cmos_date_time();
 		else if(String::strncmp((const char*)cmd,"hello",5)==0)
-			cout<<"Hi, how do you do???";
+			cout<<"Hi, how do you do???"<<"\n";
 		else if(String::strncmp((const char*)cmd,"cpuinfo",7)==0)
 			cpuinfo();
 		else if(String::strncmp((const char*)cmd,"meminfo",7)==0)
@@ -62,12 +63,10 @@ void shell::start()
 				disks[i]->disk_info();
 			}
 		}
-		/*else if(String::strncmp((const char*)cmd,"detectfd",8)==0)
+		else if(String::strncmp((const char*)cmd,"sysdriveinfo",12)==0)
 		{
-			unsigned char buffer[512]={0};		
-			flpdrvs[0]->floppy_read_block(1,buffer);
-			dump(buffer,128);
-		}*/			
+			sys_drv_info();
+		}			
 		else if(String::strncmp((const char*)cmd,"bootdev",7)==0)
 			{
 				extern char *boot_dev;

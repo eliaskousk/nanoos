@@ -1,3 +1,10 @@
+//////////////////////////////////////////////////////////
+// This file is a part of Nanos Copyright (C) 2008, 2009//
+// ashok.s.das@gmail.com                                //
+//////////////////////////////////////////////////////////
+// ide: IDE hard disk driver routine implementation     //
+//                                                      //
+//////////////////////////////////////////////////////////
 #include "ide.h"
 #include "low-io.h"
 #include "idt.h"
@@ -6,7 +13,7 @@
 
 #define MASTER 0xA0
 #define SLAVE 0xB0
-int ide_drv[4]={0};
+int ide_drv[4]={0}; //stores the boolean value if a device is present 1de_drv[0]=primary master ide_drv[3]= secondary slave
 unsigned char ide_interrupt_14=0;
 unsigned char rd_buf[512]={0};
 disk *disks[4]={NULL};//*ide0,*ide1,*ide2,*ide3; //maximum 4 physical disks on 2 IDE controller
@@ -123,6 +130,7 @@ int disk::identify()
 	this->physical.blkdev.sectors = read_le16(buf + 12);
 	
 	cout<<"\n CHS="<<physical.blkdev.cyls<<":"<<physical.blkdev.heads<<":"<<physical.blkdev.sectors<<"\n";
+	physical.blkdev.num_blks=physical.blkdev.cyls*physical.blkdev.heads*physical.blkdev.sectors;
 	if((buf[99] & 1) != 0)
 	{
 		cout<<"DMA, ";
@@ -150,6 +158,12 @@ void disk::read_sector(unsigned int blk,unsigned char *read_buf)
 	unsigned char head,lo,mid,hi,tmp,drv;
 	unsigned short stmp;	
 	int i=0;
+	if((blk< 1) || (blk > physical.blkdev.num_blks))
+	{
+		cout<<"Error: lba not within limit\n";
+		return;
+	}
+	cout<<"DEBUG : requested blk = "<<blk<<"\n";
 	while(!wait_ready(physical.blkdev.io.adr[0],1000));
 	outportb(physical.blkdev.io.adr[0]+ERR_REG,0);
 	if(physical.blkdev.unit==MASTER)
@@ -201,7 +215,14 @@ void disk::disk_info()
 	if(physical.blkdev.unit==0xa0)
 		cout<<"master : ";
 	else
-		cout<<"slave : ";	
+		cout<<"slave : ";
+	if(!has_valid_partition_tbl)
+	{
+		cout<<"WARNING : Invalid Partition Table\n";
+		cout<<"\t try fdisk under DOS/Linux to correct it\n";
+		return;
+	}
+	//else has_valid_partition_tbl==true
 	cout<<"Geometry CHS= "<<physical.blkdev.cyls<<":"<<physical.blkdev.heads<<":"<<physical.blkdev.sectors<<"\n";
 	cout<<"=========Partitions===========\n";
 	for(int i=0;i<4;i++)
@@ -222,9 +243,8 @@ void disk::disk_info()
 			cout<<"Part["<<i<<"] starts at "<<"H="<<start_head<<" S="<<start_sect<<" C="<<start_cyl;
 			cout<<"\n        ends at"<<" H="<<end_head<<" S="<<end_sect<<" C="<<end_cyl;		
 			cout<<" LBA= "<<part_table[i].beg_lba<<" and spans "<<part_table[i].tot_sect<<" sectors ";
-			if(part_table[i].boot_flag==0x80) cout<<"Bootable\n";
-			else
-			cout<<"\n";
+			if(part_table[i].boot_flag==0x80) cout<<"Bootable ";
+			cout<<"type= "<<(int)part_table[i].part_type<<"\n";
 		}
 	}
 	cout<<"=============================\n";
@@ -239,26 +259,16 @@ void disk::populate_partitions()
 	if(*(unsigned char *)(mbr+0x1fe)!=0x55 && *(unsigned char *)(mbr+0x1ff)!=0xaa) //check if the magic signature is at the end of MBR
 	{
 		cout<<"Invalid MBR or corrupted Partition Table\n";
+		has_valid_partition_tbl=false;
 		return;
 	}
+	has_valid_partition_tbl=true;
 	//hex_dump(mbr,512);
 	//cout<<sizeof(part_entry_t)<<"\n";
 	for(int i=0;i<4;i++)
 	{
 		String::memset((unsigned char *)&part_table[i],0,sizeof(part_entry_t));
 		String::memcpy((char *)&part_table[i],(char *)(parttbl+(i*16)),sizeof(part_entry_t));
-		/*part_table[i].boot_flag=*(parttbl+(i*16));
-		part_table[i].beg_head=*(parttbl+(i*16)+1);
-		part_table[i].beg_sect=*(parttbl+(i*16)+2);
-		part_table[i].beg_cyl=*(parttbl+(i*16)+3);
-		part_table[i].part_type=*(parttbl+(i*16)+4);
-		part_table[i].end_head=*(parttbl+(i*16)+5);
-		part_table[i].end_sect=*(parttbl+(i*16)+6);
-		part_table[i].end_cyl=*(parttbl+(i*16)+7);
-		part_table[i].beg_lba=*(int *)(parttbl+(i*16)+8);
-		part_table[i].tot_sect=*(int *)(parttbl+(i*16)+12);*/
-		//cout<<i<<"  ";
-		//dump((parttbl+i*16),16);
 	}
 }
 //bellow functions are not in the class they are generic

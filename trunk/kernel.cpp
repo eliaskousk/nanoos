@@ -19,9 +19,10 @@
 #include "shell.h"
 #include "multiboot.h"
 #include "kheap.h"
-#include "fdc.h"
+//#include "fdc.h"
 //#include "floppy.h"
 #include "ide.h"
+#include "drive.h"
 extern "C" int kmain(multibootInfo *mb);
 extern struct multibootHeader mboot; //this comes from the loader.asm 
 unsigned int memend; 
@@ -74,6 +75,7 @@ int kmain(multibootInfo *mb)
 	cout<<"\n\n"<<"Enabling Interrupts\n";
 	enable();
 	init_disks();
+	init_sys_drv();
 	//cout<<"Finished init_disks\n";
 	//unsigned char read_buf[512];
 	//if(disks[0])

@@ -1,3 +1,10 @@
+//////////////////////////////////////////////////////////
+// This file is a part of Nanos Copyright (C) 2008, 2009//
+// ashok.s.das@gmail.com                                //
+//////////////////////////////////////////////////////////
+// kheap: Basic memeory management using heap           //
+//                                                      //
+//////////////////////////////////////////////////////////
 /*****************************************************************************
 Simple malloc
 Chris Giese <geezer@execpc.com>	http://my.execpc.com/~geezer

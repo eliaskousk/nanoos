@@ -1,4 +1,10 @@
-//ide1.h
+//////////////////////////////////////////////////////////
+// This file is a part of Nanos Copyright (C) 2008, 2009//
+// ashok.s.das@gmail.com                                //
+//////////////////////////////////////////////////////////
+// IDE: Prototypes declaration                          //
+//                                                      //
+//////////////////////////////////////////////////////////
 #ifndef __IDE_H__
 #define __IDE_H__
 #include "idt.h"
@@ -108,9 +114,11 @@ class disk
 {
 	private:
 		ide_t physical;
-		part_entry_t part_table[4]; //drive has 4 primary partitions
+		bool has_valid_partition_tbl;
+		
 		//unsigned char sect_buf[512]={0};
 	public:
+		part_entry_t part_table[4]; //drive has 4 primary partitions
 		void populate_ide_disk(unsigned short which, unsigned short unit);
 		int wait_ready(unsigned short port,unsigned int timeout);
 		
@@ -118,11 +126,23 @@ class disk
 		int identify();
 		
 		void read_sector(unsigned int blk,unsigned char *read_buf);
+		void write_sector(unsigned int blk,unsigned char *buf){};
 		disk(){};
 		~disk(){};
 		static void disk_handler(IDT::regs *r);
 		void disk_info();
 		void populate_partitions();
+		bool is_partitioned(){ return has_valid_partition_tbl;};
+		bool is_valid_part_entry(int partn){ if(part_table[partn].tot_sect>0)
+							return true;
+						     else
+							return false;
+						    };
+		void read_first_sector_of_partition(int partn,unsigned char *buf)
+		{
+			//please do a checks.			
+			read_sector(part_table[partn].beg_lba,buf);
+		};
 };
 extern disk *disks[4];
 void init_disks();
