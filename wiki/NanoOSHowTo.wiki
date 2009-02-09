@@ -1,0 +1,32 @@
+#This Page will try to describe how to use and test Nano OS
+
+= Making/compiling =
+* downloading and pre requisite *
+  # One PC with Linux, gcc 4.2 and associated package and NASM
+  # SVN client to get the source code
+  # Patience to Tolerate huge number of Compiler Warnings.
+
+* compilation and testing *
+  # Go to downloaded source directory
+  # Execute ./build.sh
+  # Watch the Last line says " Congrats ..."
+  # If you see this Congrats message then every thing is fine.
+  # If something is wrong then you are screwed somewhere please check all the messages.
+  # After You got the kernel compiled, copy it to the Grug Floppy image and modify the grub.conf or menu.lst file to reflect the kernel name
+  # To try out some hard disk image create some hd image using dd;
+  # Get a FreeDos Livecd to boot "qemu -cdrom fdfull.iso -hda <your hd image name> -boot d"
+  # after booting into DOS do fdisk and save
+  # exit FreeDos
+  # boot nano os as "qemu -fda <nanoos fd image> -hda <your hd image name> -boot a"
+  # Now play arround
+  # to check IDE issue "hdinfo" on command prompt
+  # to check if it properly detected FAT16, issue "sysdriveinfo" at command prompt. 
+Add your content here.
+
+
+= Details =
+
+Add your content here.  Format your content with:
+  * Text in *bold* or _italic_
+  * Headings, paragraphs, and lists
+  * Automatic links to other wiki pages
