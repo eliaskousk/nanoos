@@ -1,4 +1,10 @@
-//gcpu.h
+//////////////////////////////////////////////////////////
+// This file is a part of Nanos Copyright (C) 2008, 2009//
+// ashok.s.das@gmail.com                                //
+//////////////////////////////////////////////////////////
+// cpu : defines CPU identification prototypes          //
+//                                                      //
+//////////////////////////////////////////////////////////
 #ifndef __GCPU_H__
 #define __GCPU_H__
 
@@ -21,20 +27,20 @@ typedef struct cpu
 {
 	char	cpu_vendor[16];		/* Vendor String, or Unknown */
 	char    dType[20];
-	int	cpu_family;		/* 3=386, 4=486, 5=Pentium, 6=PPro, 7=Pentium ||?, etc */
-	int	cpu_model;		/* other details such as SX, DX, overdrive, etc. */
-	int     cpu_stepping;           /* stepping*/
-	int     cpu_ext_family;		/* extended family*/
-	int	cpu_ext_model;		/*extended model info*/
-	int	cpu_fpu;	/* TRUE or FALSE */
-	int	cpu_mmx;	/* TRUE or FALSE */
-	int	cpu_cpuid;	/* Whether the cpu supported the cpuid instruction */
+	unsigned int	cpu_family;		/* 3=386, 4=486, 5=Pentium, 6=PPro, 7=Pentium ||?, etc */
+	unsigned int	cpu_model;		/* other details such as SX, DX, overdrive, etc. */
+	unsigned int     cpu_stepping;           /* stepping*/
+	unsigned int     cpu_ext_family;		/* extended family*/
+	unsigned int	cpu_ext_model;		/*extended model info*/
+	unsigned int	cpu_fpu;	/* TRUE or FALSE */
+	unsigned int	cpu_mmx;	/* TRUE or FALSE */
+	unsigned int	cpu_cpuid;	/* Whether the cpu supported the cpuid instruction */
 				/* if TRUE, you can trust the information returned */
 				/* if FALSE, be careful... ;) */
-	int	cpuid_levels;	
+	unsigned int	cpuid_levels;	
 	char Comp1[10][32];
-	int dComp1Supported[32];
-	int 	dBrand,
+	unsigned int dComp1Supported[32];
+	unsigned int 	dBrand,
 		dCacheLineSize,
 		dLogicalProcessorCount,
 		dLocalAPICID;

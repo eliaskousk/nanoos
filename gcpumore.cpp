@@ -1,3 +1,10 @@
+//////////////////////////////////////////////////////////
+// This file is a part of Nanos Copyright (C) 2008, 2009//
+// ashok.s.das@gmail.com                                //
+//////////////////////////////////////////////////////////
+// CPU: CPU Identification routine                      //
+//                                                      //
+//////////////////////////////////////////////////////////
 /*CPU IDENTIFICATION PROGRAM modified by Ashok Shankar Das
 **     1- Moved assembly codes to separate asm file "gcpun.asm"
 **     2- This file now is a pure C file can be compiled
@@ -300,9 +307,9 @@ int cpuinfo(void) /* Sample program */
 	else
 		cout<< "no";
 	cout<<"\n";
-	cout<<"Cache line size "<<my_cpu->dCacheLineSize<<"\n";
-	cout<<"Logical Processor Count "<<my_cpu->dLogicalProcessorCount<<"\n";
-	cout<<"Local ACPI ID "<<my_cpu->dLocalAPICID<<"\n";
+	cout<<"Cache line size "<<(unsigned int)my_cpu->dCacheLineSize<<"\n";
+	cout<<"Logical Processor Count "<<(unsigned int)my_cpu->dLogicalProcessorCount<<"\n";
+	cout<<"Local ACPI ID "<<(unsigned int)my_cpu->dLocalAPICID<<"\n";
 	cout<<"Supported Flags : ";
 	for(int i=0;i<32;i++)
 	{
