@@ -44,7 +44,7 @@ extern "C" {
 	extern void _isr30(regs *);
 	extern void _isr31(regs *);
 
-	static char *exception_messages[32] =
+	static const char *exception_messages[32] =
 	{
 		"Division By Zero Exception",	
 	 	"Debug Exception",

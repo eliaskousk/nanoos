@@ -18,6 +18,7 @@ class TIMER{ //timer interrupt
 			int get_ticks();
 			void set_ticks(int t);
 			void sleep(int ms);
+			//static void timer_handler(IDT::regs *r);
 			static void timer_handler(IDT::regs *r);
 		private:
 			static int timer_ticks;

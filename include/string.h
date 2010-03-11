@@ -13,7 +13,7 @@ namespace String{
                           */
 
 #ifndef size_t
-#define size_t int
+#define size_t unsigned int
 #endif
 
 #ifndef NULL

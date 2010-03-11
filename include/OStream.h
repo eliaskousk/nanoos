@@ -31,6 +31,7 @@ class OStream : public video
 public:
 	OStream();
 	OStream& operator <<(char *str);
+	OStream& operator <<(const char *str);
 	OStream& operator <<(char c);
 	OStream& operator <<(unsigned char *str);
 	OStream& operator <<(unsigned char c);

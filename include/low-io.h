@@ -74,6 +74,7 @@ inline static void halt()
 {
 	__asm__ __volatile__ ("hlt" : : );
 } /*Halts cpu*/
+
 #define min(a,b)    (((a) < (b)) ? (a) : (b))
 #endif
 

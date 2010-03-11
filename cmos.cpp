@@ -22,7 +22,7 @@ unsigned char read_cmos(unsigned char reg)
 void get_cmos_date_time()
 {
 	int year,month,date,day,hour,minute,second;
-	char *week_day[7]={"Sun","Mon","Tues","Wednes","Thurs","Fri","Satur"};
+	const char *week_day[7]={"Sun","Mon","Tues","Wednes","Thurs","Fri","Satur"};
 	second=BCD_INT(read_cmos(0));
 	minute=BCD_INT(read_cmos(2));
 	hour=BCD_INT(read_cmos(4));

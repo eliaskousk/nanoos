@@ -21,10 +21,13 @@ OStream& OStream::operator <<(char *str)
 	write(str);
 	return *this;
 }
-
+OStream& OStream::operator <<(const char *str)
+{
+	write((char *)str);
+	return *this;
+}
 OStream& OStream::operator <<(char c)
 {
-	char buf[3];
 	if(current_flags & hex)
 	{
 		char buf[3];
@@ -62,7 +65,7 @@ OStream& OStream::operator <<(int i)
 		String::itoa(buf, 2, i);
 
 	if (current_flags & hex && current_flags & showbase)
-		write("0x");
+		write((char *)"0x");
 
 	write(buf);
 	return *this;
@@ -88,7 +91,7 @@ OStream& OStream::operator <<(long long i)
 		String::itoa(buf, 2, i);
 
 	if (current_flags & hex && current_flags & showbase)
-		write("0x");
+		write((char *)"0x");
 
 	write(buf);
 	return *this;

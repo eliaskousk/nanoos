@@ -14,7 +14,7 @@
 //#include "fdc.h"
 #include "drive.h"
 //#include "floppy.h"
-
+extern void probe_pci();
 shell::shell()
 {
 	cout.clear();	
@@ -37,7 +37,7 @@ void shell::start()
 	
 	while(1)
 	{
-		unsigned char *cmd;		
+		unsigned char *cmd ;		
 		cout<<"NanOS-#>";
 		cin>>cmd;
 		cout<<" \nCommand : "<<cmd<<"\n";
@@ -72,11 +72,16 @@ void shell::start()
 				extern char *boot_dev;
 				cout<<(char *)boot_dev<<"\n";
 			}
+		else if(String::strncmp((const char*)cmd,"PCI",3)==0)
+			{
+				probe_pci();	
+			}
 		else
 			cout<<"Unknown Command\n For available commands type help\n";
+		
 	}
 }
-char *shell::logo[6]={
+const char *shell::logo[6]={
 "'|.   '|'                   ..|''||    .|'''.|  ",
 " |'|   |   ....   .. ...   .|'    ||   ||..  '  ",
 " | '|. |  '' .||   ||  ||  ||      ||   ''|||.  ",
@@ -85,10 +90,15 @@ char *shell::logo[6]={
 "================================================\n"};
 void shell::meminfo()
 {
-	extern unsigned int memend;	
+	extern unsigned int memend;
+	multiboot *mbt=multiboot::instance();
 	cout.flags(hex|showbase);
-	cout<<"Kernel starts at "<<(unsigned int)get_kernel_start()<<"\n";
-	cout<<"Kernel Ends at   "<<(unsigned int)get_kernel_end()<<"\n";
+	cout<<"Kernel starts at "<<(unsigned int)mbt->get_k_start()<<"\n";
+	cout<<"Kernel Ends at   "<<(unsigned int)mbt->get_k_end()<<"\n";
+	cout.SetColour(RED,GREEN,0);
+	cout<<"Memory Used =    "<<(unsigned int)mbt->get_mem_used()<<"\n";
+	cout<<"Memory Avail =   "<<(unsigned int)mbt->get_mem_avail()<<"\n";
+	cout.SetColour(WHITE,BLACK,0);
 	cout.flags(dec);
 	cout<<"Total Memory     "<<(memend/0x100000)+1<<" MB\n";
 }
@@ -103,5 +113,6 @@ void shell::help()
 	cout<<"\tcpuinfo  -> displays cpu info\n";
 	cout<<"\tmeminfo  -> displays memory info\n";
 	cout<<"\thdinfo   -> displays hard disk info if any\n";
+	cout<<"\tPCI      -> displays PCI bus in a crude way\n"; 
 }
 

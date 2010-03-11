@@ -11,7 +11,7 @@
 ;
 
 MBOOT_PAGE_ALIGN    equ 1<<0    ; Load kernel and modules on a page boundary
-MBOOT_MEM_INFO      equ 1<<2    ; Provide your kernel with memory info
+MBOOT_MEM_INFO      equ 1<<1    ; Provide your kernel with memory info
 
 MBOOT_HEADER_MAGIC  equ 0x1BADB002 ; Multiboot Magic value
 ; NOTE: We do not use MBOOT_AOUT_KLUDGE. It means that GRUB does not
@@ -23,10 +23,16 @@ MBOOT_CHECKSUM      equ -(MBOOT_HEADER_MAGIC + MBOOT_HEADER_FLAGS)
 [BITS 32]                       ; All instructions should be 32-bit.
 
 [GLOBAL mboot]                  ; Make 'mboot' accessible from C.
+[GLOBAL read_eip]		; I could not find a better place to put 
+				; this so put it here
+[GLOBAL start]                  ; Kernel entry point.
+[EXTERN kmain]                   ; This is the entry point of our C code
+
 [EXTERN code]                   ; Start of the '.text' section.
 [EXTERN bss]                    ; Start of the .bss section.
 [EXTERN end]                    ; End of the last loadable section.
 
+SECTION .text
 mboot:
     dd  MBOOT_HEADER_MAGIC      ; GRUB will search for this value on each
                                 ; 4-byte boundary in your kernel file
@@ -39,9 +45,9 @@ mboot:
     dd  end                     ; End of kernel.
     dd  start                   ; Kernel entry point (initial EIP).
 
-[GLOBAL start]                  ; Kernel entry point.
-[EXTERN kmain]                   ; This is the entry point of our C code
-
+read_eip:
+	pop eax
+	jmp eax
 start:
     ; Load multiboot information:
     push    ebx
@@ -53,5 +59,5 @@ start:
                                 ; executing whatever rubbish is in the memory
                                 ; after our kernel!
 SECTION .bss
-	resb 32768
+	resb 32768		;32kbytes of stack
 stack:

@@ -289,6 +289,7 @@ _isr31:
     jmp isr_common_stub
 ;============================IRQs====================
 ; 32: IRQ0
+extern task_switch
 _irq0:
     cli
     push byte 0    ; Note that these don't push an error code on the stack:
