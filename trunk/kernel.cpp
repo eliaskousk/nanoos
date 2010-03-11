@@ -23,30 +23,27 @@
 //#include "floppy.h"
 #include "ide.h"
 #include "drive.h"
+
 extern "C" int kmain(multibootInfo *mb);
-extern struct multibootHeader mboot; //this comes from the loader.asm 
+//extern struct multibootHeader mboot; //this comes from the loader.asm 
+extern void init_tasks();
 unsigned int memend; 
 unsigned int kend;
 char boot_dev[4];
+
 int kmain(multibootInfo *mb)
 {
-	construct();
 	char ans;	
 	memend=mb->memoryUpper*1024+0x100000; //memory end upper memory in bytes +1MB
+	kend=mboot.kernel_end;	
+	multiboot *m_boot=multiboot::instance();
+	construct();
+	init_heap();	
 	cout<<"Nano OS is booting\n";
-	/*cout<<"    )               )  (   "<<"\n";
-	cout<<" ( /(            ( /(  )\\ )"<<"\n";
-	cout<<" )\\())   )       )\\())(()/("<<"\n";
-	cout<<"((_)\\ ( /(  (   ((_)\\  /(_))"<<"\n";
-	cout<<" _((_))(_)) )\\ )  ((_)(_))"<<"\n";
-	cout<<"| \\| ((_)_ _(_/( / _ \\/ __|"<<"\n";
-	cout<<"| .` / _` | ' \\)) (_) \\__ \\"<<"\n";
-	cout<<"|_|\\_\\__,_|_||_| \\___/|___/"<<"\n";*/
 	String::strcpy(boot_dev,(const char *)mb->bootDevice);		
 	cout<<"Setting up GDT ";
 	GDT::setup();
 	cout<<"done\n";
-	
 	cout<<"setting up IDT ";
 	IDT::setup();
 	cout<<"done\n";
@@ -61,16 +58,20 @@ int kmain(multibootInfo *mb)
 	cout<<"installing key board \n";
 	kbd::setup();
 	cout<<"done\n";
-	
+	m_boot=multiboot::instance();
+	m_boot->set_multiboot_info(mb);
+	m_boot->set_multiboot_hdr();
 	cout<<"===============================\n";
-	cout<<"Available Memory : "<<(unsigned int)get_available_memory(mb)/1024<<"\n";
-	cout<<"     Used Memory : "<<(unsigned int)get_used_memory(mb)/1024<<"\n";
+	cout<<"Available Memory : "<<(unsigned int)m_boot->get_mem_avail()/1024<<"\n";
+	cout<<"     Used Memory : "<<(unsigned int)m_boot->get_mem_used()/1024<<"\n";
 	cout<<"===============================\n";	
 		
 	cout.flags(hex|showbase);
-	kend=get_kernel_end();
-	cout<<"Kernel start "<<(unsigned int)get_kernel_start()<<" Kernel end "<<(unsigned int)kend<<" kernel length ="<<(unsigned int)get_kernel_length()<<"\n";
+	//kend=m_boot->get_k_end();
+	cout<<"Kernel start "<<(unsigned int)m_boot->get_k_start()<<" Kernel end "<<(unsigned int)m_boot->get_k_end()<<" kernel length ="<<(unsigned int)m_boot->get_k_length()<<"\n";
+	dump_heap();
 	cout.flags(dec);
+	//dump_heap();
 	//detect_floppy_cmos();
 	cout<<"\n\n"<<"Enabling Interrupts\n";
 	enable();
@@ -93,9 +94,11 @@ int kmain(multibootInfo *mb)
 	cout<<"\n"<<"Dumping IRQ routines \n";
 	IRQ::dump_irq_routines();
 	cout<<"\n";
+	//init_tasks();
+	
 	cout<<"Press any key to start shell";
 	cin>>ans;
-	cout<<"\nStarting Shell\n";	
+	cout<<"\nStarting Shell\n";
 	shell *myshell =new shell;
 	myshell->start();
 	

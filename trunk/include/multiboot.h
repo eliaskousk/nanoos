@@ -7,9 +7,7 @@
 //////////////////////////////////////////////////////////
 #ifndef __MBOOT_H__
 #define __MBOOT_H__
-
-#define NULL 0
-
+#include "singleton.h"
 #define MULTIBOOT_MEMORY	(1L<<0)
 #define MULTIBOOT_BOOT_DEVICE	(1L<<1)
 #define MULTIBOOT_CMDLINE	(1L<<2)
@@ -87,30 +85,34 @@ typedef struct multibootInfo
   unsigned long mmap_length;
   memoryMap *mmap_addr;
 } __attribute__ ((packed)) multibootInfo;
+extern multibootHeader mboot; //from startup.asm
 
-unsigned long get_available_memory(multibootInfo *bootInfo);
-unsigned long get_used_memory(multibootInfo *bootInfo);
-void show_memory_map(multibootInfo *bootInfo);
-void show_elf_info(multibootInfo *bootInfo);
-unsigned long get_kernel_start();
-unsigned long get_kernel_end();
-unsigned long get_kernel_length();
-//void print_boot_dev(multibootInfo *bootInfo);
 }; //extern C ends
-/*class multiboot
-{
-	public:
-		multiboot(){bootInfo=NULL;};
-		multiboot(multibootInfo *mbinfo);
-			
-		~multiboot(){if(bootInfo) delete bootInfo; };
-		unsigned long get_available_memory();
-		unsigned long get_used_memory();
-		void show_memory_map();
-		void show_elf_info();
-	private:
-		multibootInfo *bootInfo;
-};
-*/
+//class multiboot
 
-#endif
+//class multiboot :public singleton<multiboot>
+class multiboot : public singleton<multiboot>
+{
+	private:
+		static multibootInfo *binfo;
+		static multibootHeader *mbooth; // set by startup.asm
+	public:
+		//multiboot(){};
+		
+		void set_multiboot_info(multibootInfo *b)
+		{ 
+			binfo=b; 
+		};
+		void set_multiboot_hdr(multibootHeader *h=&mboot)
+		{
+			mbooth=h;
+		};
+		unsigned long get_mem_avail();//{ return (get_available_memory());};
+		unsigned long get_mem_used();//{ return (get_used_memory());};
+		unsigned long get_k_start();//{ return (get_kernel_start());};
+		unsigned long get_k_end();//{ return (get_kernel_end());};
+		unsigned long get_k_length();//{ return(get_kernel_length());};
+};
+
+#endif //mboot_h
+

@@ -109,7 +109,7 @@ void video::putchar(char c)
 
 void video::scrollup()		// scroll the screen up one line 
 {
-	int t;
+	unsigned int t;
 
 	//disable();	//this memory operation should not be interrupted,
 				//can cause errors (more of an annoyance than anything else)

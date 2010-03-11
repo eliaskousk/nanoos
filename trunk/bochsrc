@@ -3,13 +3,13 @@ config_interface: textconfig
 display_library: x
 megs: 128
 romimage: file="/usr/share/bochs/BIOS-bochs-latest"
-vgaromimage: file="/usr/share/bochs/VGABIOS-lgpl-latest"
+#vgaromimage: file="/usr/share/bochs/VGABIOS-lgpl-latest"
 boot: floppy
 floppy_bootsig_check: disabled=0
 floppya: 1_44="/tmp/nanoos.img", status=inserted
 # no floppyb
 ata0: enabled=1, ioaddr1=0x1f0, ioaddr2=0x3f0, irq=14
-ata0-master: type=disk, mode=flat, translation=auto, path="/tmp/largehd.img", cylinders=203, heads=16, spt=63, biosdetect=auto, model="Generic 1234"
+#ata0-master: type=disk, mode=flat, translation=auto, path="/tmp/largehd.img", cylinders=203, heads=16, spt=63, biosdetect=auto, model="Generic 1234"
 #ata0-slave: type=disk, mode=flat, translation=auto, path="/tmp/nanohd.img", cylinders=32, heads=16, spt=63, biosdetect=auto, model="Generic 1234"
 ata1: enabled=1, ioaddr1=0x170, ioaddr2=0x370, irq=15
 #ata1-master: type=disk, mode=flat, translation=auto, path="/tmp/nanohd.img", cylinders=32, heads=16, spt=63, biosdetect=auto, model="Generic 1234"
@@ -22,7 +22,7 @@ com1: enabled=1, mode=null, dev=""
 com2: enabled=0
 com3: enabled=0
 com4: enabled=0
-usb1: enabled=0
+
 i440fxsupport: enabled=1
 vga_update_interval: 40000
 vga: extension=vbe

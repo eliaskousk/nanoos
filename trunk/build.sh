@@ -39,6 +39,8 @@ g++ -O0 -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultli
 g++ -O0 -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -fno-rtti -fno-exceptions -c ide.cpp
 g++ -O0 -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -fno-rtti -fno-exceptions -c drive.cpp
 g++ -O0 -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -fno-rtti -fno-exceptions -c fatfs.cpp
+g++ -O0 -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -fno-rtti -fno-exceptions -c pci.cpp
+g++ -O0 -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -fno-rtti -fno-exceptions -c task.cpp
 
 echo 
 msg "Assembling asm files using nasm "
@@ -51,8 +53,10 @@ rm -f ./bin/nanos.elf
 echo
 msg "Linking kernel... please see map file for details"
 echo
-ld -T link.ld  -Map nano-os.map loader.o kernel.o video.o runtime.o string.o OStream.o kheap.o gdt.o idt.o isr_wrap.o irq.o timer.o kbd.o \
-      IStream.o cmos.o multiboot.o gcpun.o gcpumore.o ide.o drive.o fatfs.o shell.o -o ./bin/nanos.elf 
+ld -T link.ld -Map nano-os.map loader.o kernel.o video.o runtime.o \
+      string.o OStream.o kheap.o gdt.o idt.o isr_wrap.o irq.o timer.o \
+      kbd.o IStream.o cmos.o multiboot.o gcpun.o gcpumore.o ide.o drive.o \
+      fatfs.o pci.o task.o shell.o -o ./bin/nanos.elf 
 
 msg "removing object files and backup files"
 

@@ -201,8 +201,8 @@ void capability(cpu_inf t,cpu_t *mcpu)
 
 void check_cpu(cpu_t *mcpu) /* This is the function to call to set the globals */
 {
-	char 	*unknown_vendor = "NoVendorName";
-	char	*cyrix = "CyrixInstead";
+	const char 	*unknown_vendor = "NoVendorName";
+	const char	*cyrix = "CyrixInstead";
 	long vendor_temp[3];
 	cpu_inf t;
 	String::memset(mcpu->cpu_vendor, 0, 16);
@@ -279,8 +279,8 @@ void check_cpu(cpu_t *mcpu) /* This is the function to call to set the globals *
 
 int cpuinfo(void) /* Sample program */
 {
-	cpu_t *my_cpu = (cpu_t *)kmalloc(sizeof(cpu_t));
-	
+	//cpu_t *my_cpu = (cpu_t *)kmalloc(sizeof(cpu_t));
+	cpu_t *my_cpu = new(cpu_t);// *)kmalloc(sizeof(cpu_t));
 	check_cpu(my_cpu);
 	cout<<"CPU has cpuid instruction? ";	
 	if(my_cpu->cpu_cpuid)
@@ -317,6 +317,7 @@ int cpuinfo(void) /* Sample program */
 			cout<<my_cpu->Comp1[i]<<" ";
 	}
 	cout<<"\n";
-	delete my_cpu;
+	//kfree(my_cpu);
+	//delete(my_cpu);	
 	return 1;
 }

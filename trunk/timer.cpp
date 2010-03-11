@@ -11,6 +11,7 @@
 #include "timer.h"
 #include "irq.h"
 TIMER *my_timer;
+extern IDT::regs *task_switch(IDT::regs *x);
 	/* to set timer frequency IRQ0 frequency */
 	void TIMER::timer_phase(int hz)
 	{
@@ -27,7 +28,7 @@ TIMER *my_timer;
 	void TIMER::setup()
 	{
 		cout<<"Timer Initializing\n";    		
-		timer_phase(1000);
+		timer_phase(100);
 		cout<<"Installing handler \n"; 
 		IRQ::install_handler(0,TIMER::timer_handler);
 	}
@@ -45,13 +46,28 @@ TIMER *my_timer;
 		cur=get_ticks();
 		while(cur+ms-get_ticks());
 	}
-
+	/*
 	void TIMER::timer_handler(IDT::regs *r)	
 	{
-		/* Increment our 'tick count' */
-		//disable();
+		extern IDT::regs *ktask_switch(IDT::regs *x);
+		//unsigned int old_esp=(volatile unsigned int)r->esp;		
+		//cout<<"Old= "<<(unsigned int)old_esp;		
+		// Increment our 'tick count' 
+		//cout<<(unsigned int)r->int_no;
 		timer_ticks++;
-		//enable();
-		//cout<<"tick\n";
+		r=ktask_switch(r);//tasks enabled ????
+		//cout<<"taskswitch\n";
+		//cout<<" cur= "<<(unsigned int)r->esp<<'\n';
+	}*/
+	void TIMER::timer_handler(IDT::regs *r)	
+	{
+		//unsigned int old_esp=(volatile unsigned int)r;		
+		//cout<<"Old= "<<(unsigned int)old_esp;		
+		// Increment our 'tick count'
+		//cout<<(unsigned int)r->int_no;
+		timer_ticks++;
+		r=task_switch(r);//tasks enabled ????
+		//cout<<"taskswitch\n";
+		//cout<<" cur= "<<(unsigned int)r->esp<<'\n';
 	}	
 
