@@ -65,13 +65,14 @@
 #define NUM_IO_SPANS	2
 #define	read_le16(X)	*(unsigned short *)(X)
 #define	read_be16(X)	bswap16(*(unsigned short *)(X))
+
 typedef struct
 {
 	unsigned char dma;			/* 8-bit DMA mask */
 	unsigned short irq;			/* 16-bit IRQ mask */
 	unsigned short adr[NUM_IO_SPANS];	/* start of I/O range */
 	unsigned short span[NUM_IO_SPANS];	/* length of I/O range */
-} io_t;
+}__attribute__((packed)) io_t;
 typedef struct
 {
 /* hardware interface (hwif; or "bus") */
@@ -83,7 +84,7 @@ typedef struct
 	unsigned short bytes_per_blk;
 /* floppy and CHS IDE only */
 	unsigned short sectors, heads, cyls;
-} blkdev_t;
+}__attribute__((packed)) blkdev_t;
 typedef struct
 {
 /* generic block device info */
@@ -96,7 +97,7 @@ typedef struct
 	unsigned has_multmode : 1;
 	unsigned use_multmode : 1;
 	unsigned short mult_count;
-} ide_t;
+} __attribute__((packed)) ide_t;
 typedef struct part_entry
 {
 	unsigned int boot_flag:8;
@@ -109,7 +110,7 @@ typedef struct part_entry
 	unsigned int end_cyl:8;
 	unsigned int  beg_lba;
 	unsigned int  tot_sect;
-}part_entry_t __attribute__((packed));
+} __attribute__((packed)) part_entry_t;
 class disk
 {
 	private:
@@ -154,4 +155,5 @@ void read_sector(unsigned short port,unsigned int blk,char *read_buf);
 void dump(void *data_p, unsigned count);
 void hex_dump (const unsigned char *data, int len);
 //void ide_read_handler(regs *r);
+
 #endif

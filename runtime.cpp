@@ -29,7 +29,7 @@ struct object
         void (*f)(void*);
         void *p;
         void *d;
-} object[32] = {0};
+} object[32] = {0,0,0};
 
 unsigned int iObject = 0;
 

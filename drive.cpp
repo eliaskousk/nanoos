@@ -15,7 +15,7 @@ unsigned char super[512];
 drive *sys_drv[26];
 void init_sys_drv()
 {
-	drive *temp_drv;
+	//drive *temp_drv;
 	int drv_num=0;
 	
 	for(int i=0;i<26;i++)

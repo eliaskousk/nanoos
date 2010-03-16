@@ -31,18 +31,6 @@ extern "C" {
 	void _irq_handler(IDT::regs *r)
 	{
 		irqfunc_t my_handler;
-	
-		/* Find out if we have a custom handler to run for this
-		*  IRQ, and then finally, run it */
-		my_handler = irq_routines[r->int_no - 32];
-		if (my_handler)
-		{
-			my_handler(r);
-		}
-		else
-		{
-			cout<<"No handlers for IRQ "<< (int)r->int_no<< "installed\n";
-		}
 		/* If the IDT entry that was invoked was greater than 40
 		*  (meaning IRQ8 - 15), then we need to send an EOI to
 		*  the slave controller */
@@ -54,6 +42,18 @@ extern "C" {
 		/* In either case, we need to send an EOI to the master
 		*  interrupt controller too */
 		outportb(0x20, 0x20);
+		/* Find out if we have a custom handler to run for this
+		*  IRQ, and then finally, run it */
+		my_handler = irq_routines[r->int_no - 32];
+		if (my_handler)
+		{
+			my_handler(r);
+		}
+		else
+		{
+			cout<<"No handlers for IRQ "<< (int)r->int_no<< "installed\n";
+		}
+		
 	}
 
 	/* These are own ISRs that point to our special IRQ handler

@@ -14,7 +14,7 @@ typedef struct
 {
 	unsigned char jmp[3];    	//jump instruction to the boot strap code in boot sector
 	unsigned char OEM_name[8];      //OEM name MSDOS IBMDOS etc...
-} fat_jmp_oem __attribute__ ((packed));
+} __attribute__ ((packed)) fat_jmp_oem;
 
 //The following structure defines some value which is compatible to BIOS functions
 typedef struct
@@ -31,7 +31,7 @@ typedef struct
 	unsigned short  NumberOfHeads;       /* Number of heads used by INT 13*/
 	unsigned int    HiddenSectors;       /* For partitioned media it is setted */
 	unsigned int    TotalSectors32;	     /* Number of sectors if TotalSectors16 == 0 */
-} BPB __attribute__ ((packed));
+}__attribute__ ((packed)) BPB ;
 /*  FAT 12 or FAT 16 file system */
 /*  Size of this struture is 26 */
 typedef struct 
@@ -42,7 +42,7 @@ typedef struct
 	unsigned int  	 VolumeID;          /* Volume serial number */
 	unsigned char    VolumeLabel[11];   /* Volume label */
 	unsigned char    FileSystem[8];     /* File system type - FAT12 , FAT16  */
-} FAT12_16 __attribute__ ((packed));
+}__attribute__ ((packed)) FAT12_16;
 /* FAT 32 file system */
 /*  Size of this struture is 52 */
 typedef struct
@@ -60,7 +60,7 @@ typedef struct
 	unsigned int VolumeID;             /* Volume serial number */
 	unsigned char   VolumeLabel[11];      /* Volume label */
 	unsigned char   FileSystem[8];        /* File system FAT32 */
-} FAT32 __attribute__ ((packed));
+} __attribute__ ((packed)) FAT32;
 
 //the whole boot sector for fat12 and fat16
 typedef struct
@@ -70,14 +70,14 @@ typedef struct
 	FAT12_16	fat_param;
 	unsigned char 	boot_code[448];	//boot code in boot sector
 	unsigned short  boot_sig;	//0x550xaa
-}fat_12_16_bs __attribute__ ((packed));
+} __attribute__ ((packed)) fat_12_16_bs;
 
 typedef struct
 {
 	fat_jmp_oem	jmp_oem;
 	BPB		bpb;
 	FAT32		fat_param;
-}fat_32_bs __attribute__ ((packed));
+} __attribute__ ((packed)) fat_32_bs;
 /* Total of this structure is 32 byte */
 typedef struct 
 {
@@ -94,7 +94,7 @@ typedef struct
 	unsigned short AccessDate;                 /* Last Accessed Time - This field is used by Dos*/
 	unsigned short FirstClusterLow;            /* Low word of first cluster number */
 	unsigned int FileSize;                   /* Size of file must be zero for Directory */
-} direntry __attribute__ ((packed));	
+} __attribute__ ((packed)) direntry;	
 
 class fat16
 {

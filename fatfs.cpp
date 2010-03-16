@@ -64,8 +64,8 @@ void fat16::dump_fat_info()
 	cout<<"\tVolume ID      = "<<boot_sect.fat_param.VolumeID<<"\n";
 	cout<<"\tVolume Label   = "<<boot_sect.fat_param.VolumeLabel<<"\n";
 	cout<<"\tFile System    = "<<boot_sect.fat_param.FileSystem<<"\n";
-	if((boot_sect.boot_sig&0x00ff==0xaa && boot_sect.boot_sig&0xff00==0x55) ||  \
-		(boot_sect.boot_sig&0x00ff==0x55 && boot_sect.boot_sig&0xff00==0xaa))
+	if(((boot_sect.boot_sig&0x00ff)==0xaa && (boot_sect.boot_sig&0xff00)==0x55) ||  \
+		((boot_sect.boot_sig&0x00ff)==0x55 && (boot_sect.boot_sig&0xff00)==0xaa))
 		cout<<"\t Bootable FS!!!\n";
 }
 

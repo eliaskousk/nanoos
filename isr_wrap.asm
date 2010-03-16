@@ -60,8 +60,8 @@ global _irq15   ;IRQ 15
 ;  0: Divide By Zero Exception
 _isr0:
     cli
-    push byte 0    ; A normal ISR stub that pops a dummy error code to keep a
-                   ; uniform stack frame
+    push byte 0    ; A normal ISR stub that pops a dummy error code to keep 
+		   ;a uniform stack frame
     push byte 0
     jmp isr_common_stub
 
@@ -117,9 +117,9 @@ _isr7:
 ;  8: Double Fault Exception (With Error Code!)
 _isr8:
     cli
-    push byte 8        ; Note that we DON'T push a value on the stack in this one!
-                   ; It pushes one already! Use this type of stub for exceptions
-                   ; that pop error codes!
+    push byte 8 ; Note that we DON'T push a value on the stack in this one!
+                ; It pushes one already!Use this type of stub for exceptions
+                ; that pop error codes!
     jmp isr_common_stub
 
 ;9: co-processor segment overrun
@@ -132,41 +132,41 @@ _isr9:
 ;10 Bad TSS
 _isr10:
     cli
-    push byte 10        ; Note that we DON'T push a value on the stack in this one!
-                   ; It pushes one already! Use this type of stub for exceptions
-                   ; that pop error codes!
+    push byte 10; Note that we DON'T push a value on the stack in this one!
+                ; It pushes one already!Use this type of stub for exceptions
+                ; that pop error codes!
     jmp isr_common_stub
 
 ;11 Segment Not Present
 _isr11:
     cli
-    push byte 11        ; Note that we DON'T push a value on the stack in this one!
-                   ; It pushes one already! Use this type of stub for exceptions
-                   ; that pop error codes!
+    push byte 11; Note that we DON'T push a value on the stack in this one!
+                ; It pushes one already!Use this type of stub for exceptions
+                ; that pop error codes!
     jmp isr_common_stub
 
 ;12 Stack fault
 _isr12:
     cli
-    push byte 12        ; Note that we DON'T push a value on the stack in this one!
-                   ; It pushes one already! Use this type of stub for exceptions
-                   ; that pop error codes!
+    push byte 12; Note that we DON'T push a value on the stack in this one!
+                ; It pushes one already!Use this type of stub for exceptions
+                ; that pop error codes!
     jmp isr_common_stub
 
 ;13 GPF
 _isr13:
     cli
-    push byte 13        ; Note that we DON'T push a value on the stack in this one!
-                   ; It pushes one already! Use this type of stub for exceptions
-                   ; that pop error codes!
+    push byte 13; Note that we DON'T push a value on the stack in this one!
+                ; It pushes one already!Use this type of stub for exceptions
+                ; that pop error codes!
     jmp isr_common_stub
 
 ;14 Page Fault
 _isr14:
     cli
-    push byte 14        ; Note that we DON'T push a value on the stack in this one!
-                   ; It pushes one already! Use this type of stub for exceptions
-                   ; that pop error codes!
+    push byte 14; Note that we DON'T push a value on the stack in this one!
+                ; It pushes one already!Use this type of stub for exceptions
+                ; that pop error codes!
     jmp isr_common_stub
 
 ;15 Unknown Exception
@@ -429,7 +429,31 @@ irq_common_stub:
     popa
     add esp, 8
     iret
+irq0_stub:
+    pusha
+    push ds
+    push es
+    push fs
+    push gs
+    mov ax, 0x10
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov eax, esp
+    push eax
+    mov eax, task_switch
+	call eax
+    mov esp,eax
+    pop eax
 
+    pop gs
+    pop fs
+    pop es
+    pop ds
+    popa
+    add esp, 8
+    iret
 ; We call a C function in here. We need to let the assembler know
 ; that '_fault_handler' exists in another file
 extern _fault_handler

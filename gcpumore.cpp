@@ -29,7 +29,7 @@
 
 void cyrix_type(cpu_t *mcpu)
 {
-	char temp, orgc2, newc2, orgc3, newc3;
+	char orgc2, newc2, orgc3, newc3;
 	int cr2_rw=FALSE, cr3_rw=FALSE, type;
 
 	type = UNKNOWN;
