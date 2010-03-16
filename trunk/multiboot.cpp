@@ -32,7 +32,7 @@ unsigned long multiboot::get_mem_used()
 
 	if (binfo->flags & MULTIBOOT_MODS)
 	{
-		for (i=0; i<binfo->modulesCount; i++)
+		for (i=0; (unsigned int)i<binfo->modulesCount; i++)
 		if (binfo->modules[i].end > top)
           		top = binfo->modules[i].end;
 	}

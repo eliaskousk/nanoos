@@ -37,7 +37,7 @@ void shell::start()
 	
 	while(1)
 	{
-		unsigned char *cmd ;		
+		char *cmd=new char[128]  ;		
 		cout<<"NanOS-#>";
 		cin>>cmd;
 		cout<<" \nCommand : "<<cmd<<"\n";

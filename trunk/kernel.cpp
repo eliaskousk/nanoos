@@ -73,6 +73,7 @@ int kmain(multibootInfo *mb)
 	cout.flags(dec);
 	//dump_heap();
 	//detect_floppy_cmos();
+	init_tasks();
 	cout<<"\n\n"<<"Enabling Interrupts\n";
 	enable();
 	init_disks();
@@ -94,7 +95,7 @@ int kmain(multibootInfo *mb)
 	cout<<"\n"<<"Dumping IRQ routines \n";
 	IRQ::dump_irq_routines();
 	cout<<"\n";
-	//init_tasks();
+	
 	
 	cout<<"Press any key to start shell";
 	cin>>ans;

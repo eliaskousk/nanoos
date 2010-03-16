@@ -45,10 +45,10 @@ int disk::wait_ready(unsigned short port,unsigned int timeout)
 	{
 		stat=ata_read_status(port);
 		if(!stat) return 1;
-		if(stat & (STA_DRDY|STA_BSY)==STA_DRDY) return 1;
+		if(stat & ((STA_DRDY|STA_BSY)==STA_DRDY)) return 1;
 		stat=ata_read_alt_status(port);
 		if(!stat) return 1;
-		if(stat & (STA_DRDY|STA_BSY)==STA_DRDY) return 1;
+		if(stat & ((STA_DRDY|STA_BSY)==STA_DRDY)) return 1;
 		timeout--;
 	}
 	return -1;
@@ -56,6 +56,8 @@ int disk::wait_ready(unsigned short port,unsigned int timeout)
 int disk::wait_interrupt(unsigned short int_mask,unsigned int timeout)
 {
 	unsigned short interrupted=0;
+	int_mask |= ide_interrupt_14; ///***currently vauge statement :
+					/// Should be worked upon	
 	while(timeout--)
 	{
 		if(ide_interrupt_14!=0)
@@ -74,7 +76,7 @@ int disk::wait_interrupt(unsigned short int_mask,unsigned int timeout)
 int disk::identify()
 {
 	unsigned char temp1, temp2, id_cmd, buf[512], swap_chars=1,drv;
-	unsigned short ioadr, temp, id_delay;	
+	unsigned short  temp, id_delay;	
 	cout<<"Identify\n";
 	if(this->physical.blkdev.unit==0xa0)
 		drv=0;
@@ -155,7 +157,7 @@ int disk::identify()
 //read a sector
 void disk::read_sector(unsigned int blk,unsigned char *read_buf)
 {
-	unsigned char head,lo,mid,hi,tmp,drv;
+	unsigned char head,lo,mid,hi,drv;
 	unsigned short stmp;	
 	int i=0;
 	if((blk< 1) || (blk > physical.blkdev.num_blks))
@@ -237,7 +239,7 @@ void disk::disk_info()
 			start_cyl +=(start_sect&192)<<2;
 			start_sect &=63;
 			end_sect=part_table[i].end_sect;
-			end_cyl=part_table[i].end_cyl+(end_sect&192)<<2;
+			end_cyl=part_table[i].end_cyl+((end_sect&192)<<2);
 			end_sect &=63;
 			
 			cout<<"Part["<<i<<"] starts at "<<"H="<<start_head<<" S="<<start_sect<<" C="<<start_cyl;
@@ -302,10 +304,10 @@ int detect_cntrlr(unsigned short port)
 		{
 			stat=ata_read_status(port);
 			if(!stat) return 1;
-			if(stat & (STA_DRDY|STA_BSY)==STA_DRDY) return 1;
+			if(stat & ((STA_DRDY|STA_BSY)==STA_DRDY)) return 1;
 			stat=ata_read_alt_status(port);
 			if(!stat) return 1;
-			if(stat & (STA_DRDY|STA_BSY)==STA_DRDY) return 1;
+			if(stat & ((STA_DRDY|STA_BSY)==STA_DRDY)) return 1;
 			timeout--;
 			my_timer->sleep(10);
 		}
@@ -489,7 +491,7 @@ void hex_dump (const unsigned char *data, int len)
 
       const size_t chunk = MIN (len - pos, 16);
 
-      for ( i = 0; i < chunk; ++i)
+      for ( i = 0;(unsigned int) i < chunk; ++i)
 	if (i % 4 == 3)
 	  cout<<(unsigned short)data[pos + i]<<" ";
 	else
@@ -498,7 +500,7 @@ void hex_dump (const unsigned char *data, int len)
      // if (chunk < 16)
 	//printf ("%*s", (int) ((16 - chunk) * 2 + (16 - chunk + 3) / 4), "");
 	
-      for ( i = 0; i < chunk; ++i)
+      for ( i = 0;(unsigned int) i < chunk; ++i)
 	{
 		cout.flags(dec);
 	  unsigned char b = data[pos + i];

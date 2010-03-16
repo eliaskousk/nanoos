@@ -19,14 +19,17 @@ typedef struct thread{
 
 thread threads[2];		
 
-int current_task=-1;// no task is started.
+static int current_task=-1;// no task is started.
 
 // this function will create a task and add to the threads[]
 void create_thread(int id,void (*mythread)())
 {
-	threads[id].r=(IDT::regs *)kmalloc(sizeof(IDT::regs));
+	IDT::regs *tr=new(IDT::regs);
+	
+	//threads[id].r=(IDT::regs *)kmalloc(sizeof(IDT::regs));
+	threads[id].r=tr;	
 	threads[id].id=id;
-	threads[id].r->esp= (unsigned long int)kmalloc(512)+512;
+	threads[id].r->esp= (unsigned long int)kmalloc(1024)+1024;
 	threads[id].r->gs = 0x10;
 	threads[id].r->fs = 0x10;
 	threads[id].r->es = 0x10;
@@ -40,9 +43,10 @@ void create_thread(int id,void (*mythread)())
 	threads[id].r->ecx=0;
 	threads[id].r->eax=0;
 	threads[id].r->eip=(unsigned long)mythread;
-	//threads[id].err_code=;
+	//threads[id].err_code=0x;
 	threads[id].r->cs=0x8;
-	threads[id].r->eflags=0x0200;
+	threads[id].r->eflags=0x0202;
+	cout<<"Createing Task stack at = "<<(unsigned int)tr<<"\n";
 	/*				 //to the stack for us
 	//First, this stuff is pushed by the processor
 
@@ -71,55 +75,68 @@ extern "C" { extern unsigned int read_eip();}
 //Notice how we get the old esp from the ASM code
 //It's not a pointer, but we actually get the ESP value
 //That way we can save it in our task structure
-
+extern "C" {
 IDT::regs *task_switch(IDT::regs *r)
 {
 		
-	unsigned int ebp;	
+	unsigned int ebp,esp;
+	//outportb(0xA0, 0x20);
+	//outportb(0x20, 0x20);
 	if(current_task != -1)
 	{ 
 		//Were we even running a task?
+		//asm volatile("mov %%esp, %0" : "=r"(esp));
+		//asm volatile("mov %%ebp, %0" : "=r"(ebp));
 		threads[current_task].r->esp = r->esp; //Save the new esp for 
-		asm volatile("mov %%ebp, %0" : "=r"(ebp));		
-		threads[current_task].r->ebp = ebp;
+		threads[current_task].r->ebp = r->ebp;
 		threads[current_task].r->eip = read_eip();
 		//Now switch what task we're on
 		if(current_task == 0)
 			current_task = 1;
 		else 
 			current_task = 0;
+		/*current_task++;
+		current_task = current_task % 2;*/
 	}
 	else
 	{
   		current_task = 0; //We just started multi-tasking, start with task 0
 	}
- 
+	cout<<"task= "<<current_task<<" esp= "<<(unsigned int)r->esp<<"\n";
 	return threads[current_task].r; //Return new stack pointer to ASM
 }
-
+} //extern C
 
 void thread1()
 {
 	for(;;)
 	{	
-		cout.gotoxy(5,70);
-		cout<<"hello ";
+		//cout.gotoxy(5,70);
+		//cout<<"hello ";
 	}
 }
 void thread2()
 {
 	for(;;)
 	{
-		cout.gotoxy(5,70);
+		//cout.gotoxy(15,15);
+		cout<<"hello ";
+	}
+}
+void thread3()
+{
+	for(;;)
+	{
+		//cout.gotoxy(15,15);
 		cout<<"World ";
 	}
 }
-
 void init_tasks()
 {
-	
+	cout<<"initializing Tasks\n";
 	create_thread(0,thread1);
 	create_thread(1,thread2);
+	//create_thread(2,thread3);
 }
 
 

@@ -78,7 +78,7 @@ void *kmalloc(size_t size)
 }
 void kfree(void *p)
 {
-	malloc_t *m,*n;
+	malloc_t *m;
 	m = (malloc_t *)((char *)p - sizeof(malloc_t));
 	if(((unsigned char*)p< heap_bot)||((unsigned char *)p>heap_top))
 	{
