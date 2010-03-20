@@ -37,6 +37,7 @@ public:
 	OStream& operator <<(unsigned char c);
 	OStream& operator <<(int i);
 	OStream& operator <<(unsigned int i);
+	OStream& operator <<(unsigned long i);
 	OStream& operator <<(long long i);
 	OStream& operator <<(unsigned long long i);
 	void flags(unsigned int f);

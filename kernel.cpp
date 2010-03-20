@@ -50,11 +50,6 @@ int kmain(multibootInfo *mb)
 	cout<<"setting up IRQ subsystem ";
 	IRQ::setup();
 	cout<<"done\n";
-	cout<<"installing timer interrupt ";
-	my_timer = new TIMER;	
-	my_timer->setup();
-	cout<<"done\n";
-	
 	cout<<"installing key board \n";
 	kbd::setup();
 	cout<<"done\n";
@@ -73,7 +68,13 @@ int kmain(multibootInfo *mb)
 	cout.flags(dec);
 	//dump_heap();
 	//detect_floppy_cmos();
+	cout<<"Initializing tasking ";
 	init_tasks();
+	cout<<"done\n";
+	cout<<"installing timer interrupt ";
+	my_timer = new TIMER;	
+	my_timer->setup();
+	cout<<"done\n";
 	cout<<"\n\n"<<"Enabling Interrupts\n";
 	enable();
 	init_disks();

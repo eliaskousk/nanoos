@@ -53,10 +53,11 @@ rm -f ./bin/nanos.elf
 echo
 msg "Linking kernel... please see map file for details"
 echo
-ld -T link.ld -Map nano-os.map loader.o kernel.o video.o runtime.o \
-      string.o OStream.o kheap.o gdt.o idt.o isr_wrap.o irq.o timer.o \
-      kbd.o IStream.o cmos.o multiboot.o gcpun.o gcpumore.o ide.o drive.o \
-      fatfs.o pci.o task.o shell.o -o ./bin/nanos.elf 
+ld -T link.ld -Map nano-os.map loader.o runtime.o video.o kheap.o string.o \
+	OStream.o multiboot.o isr_wrap.o gdt.o idt.o irq.o kbd.o IStream.o \
+	ide.o drive.o cmos.o task.o timer.o fatfs.o pci.o \
+	gcpun.o gcpumore.o kernel.o  shell.o \
+         -o ./bin/nanos.elf 
 
 msg "removing object files and backup files"
 

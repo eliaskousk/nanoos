@@ -76,7 +76,11 @@ OStream& OStream::operator <<(unsigned int i)
 	*this << (int)i;
 	return *this;
 }
-
+OStream& OStream::operator <<(unsigned long i)
+{
+	*this << (int)i;
+	return *this;
+}
 OStream& OStream::operator <<(long long i)
 {
 	char buf[65];
