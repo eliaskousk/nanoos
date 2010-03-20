@@ -56,6 +56,9 @@ global _irq12
 global _irq13
 global _irq14
 global _irq15   ;IRQ 15
+global read_eip		; I could not find a better place to put 
+				; this so put it here
+segment .text
 
 ;  0: Divide By Zero Exception
 _isr0:
@@ -429,31 +432,7 @@ irq_common_stub:
     popa
     add esp, 8
     iret
-irq0_stub:
-    pusha
-    push ds
-    push es
-    push fs
-    push gs
-    mov ax, 0x10
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
-    mov eax, esp
-    push eax
-    mov eax, task_switch
-	call eax
-    mov esp,eax
-    pop eax
 
-    pop gs
-    pop fs
-    pop es
-    pop ds
-    popa
-    add esp, 8
-    iret
 ; We call a C function in here. We need to let the assembler know
 ; that '_fault_handler' exists in another file
 extern _fault_handler
@@ -484,3 +463,7 @@ isr_common_stub:
     popa
     add esp, 8     ; Cleans up the pushed error code and pushed ISR number
     iret           ; pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP!
+
+read_eip:
+	pop eax
+	jmp eax

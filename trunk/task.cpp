@@ -9,6 +9,7 @@
 #include "kheap.h"
 #include "OStream.h"
 #include "idt.h"
+#include "low-io.h"
 using namespace IDT;
 using namespace String;
 typedef struct thread{
@@ -17,19 +18,19 @@ typedef struct thread{
                            //handler function
 }thread;
 
-thread threads[2];		
+thread threads[4];		
 
 static int current_task=-1;// no task is started.
 
 // this function will create a task and add to the threads[]
 void create_thread(int id,void (*mythread)())
 {
-	IDT::regs *tr=new(IDT::regs);
-	
+	IDT::regs *tr=(IDT::regs*)new(IDT::regs);
+	memset((void*)tr,0,sizeof(IDT::regs));
 	//threads[id].r=(IDT::regs *)kmalloc(sizeof(IDT::regs));
 	threads[id].r=tr;	
 	threads[id].id=id;
-	threads[id].r->esp= (unsigned long int)kmalloc(1024)+1024;
+	threads[id].r->esp= (unsigned int)kmalloc(1024)+1024;
 	threads[id].r->gs = 0x10;
 	threads[id].r->fs = 0x10;
 	threads[id].r->es = 0x10;
@@ -46,7 +47,9 @@ void create_thread(int id,void (*mythread)())
 	//threads[id].err_code=0x;
 	threads[id].r->cs=0x8;
 	threads[id].r->eflags=0x0202;
-	cout<<"Createing Task stack at = "<<(unsigned int)tr<<"\n";
+	memcpy((unsigned int *)threads[id].r->esp,(unsigned int*)threads[id].r,sizeof(IDT::regs));
+	//threads[id].r->esp=threads[id].r->esp+sizeof(IDT::regs);	
+	cout<<"Createing Task stack at = "<<(unsigned int)threads[id].r->esp<<"\n";
 	/*				 //to the stack for us
 	//First, this stuff is pushed by the processor
 
@@ -70,40 +73,40 @@ void create_thread(int id,void (*mythread)())
 	*/
 }
 
-extern "C" { extern unsigned int read_eip();}			
+extern "C" { extern unsigned int read_eip();
+	     extern void cpu_context_restore(IDT::regs *r);
+	     extern void cpu_context_save(IDT::regs *r);	
+ 	}			
 //Switch between our two tasks
 //Notice how we get the old esp from the ASM code
 //It's not a pointer, but we actually get the ESP value
 //That way we can save it in our task structure
 extern "C" {
-IDT::regs *task_switch(IDT::regs *r)
+
+void task_switch(IDT::regs *r)
 {
 		
-	unsigned int ebp,esp;
-	//outportb(0xA0, 0x20);
-	//outportb(0x20, 0x20);
+	//unsigned long ebp,esp,sz;
+	//cout<<"task_switch\n";
 	if(current_task != -1)
 	{ 
-		//Were we even running a task?
-		//asm volatile("mov %%esp, %0" : "=r"(esp));
-		//asm volatile("mov %%ebp, %0" : "=r"(ebp));
-		threads[current_task].r->esp = r->esp; //Save the new esp for 
-		threads[current_task].r->ebp = r->ebp;
-		threads[current_task].r->eip = read_eip();
-		//Now switch what task we're on
-		if(current_task == 0)
-			current_task = 1;
-		else 
-			current_task = 0;
-		/*current_task++;
-		current_task = current_task % 2;*/
+		asm("cli");
+		memcpy(threads[current_task].r,r,sizeof(IDT::regs));
+		++current_task;
+		current_task%=4;
+		memcpy(r,threads[current_task].r,sizeof(IDT::regs));		
+		asm("sti");		
+		
 	}
 	else
 	{
-  		current_task = 0; //We just started multi-tasking, start with task 0
+		asm("cli");		
+		current_task = 0; //We just started multi-tasking, start with task 0
+		memcpy(r,threads[current_task].r,sizeof(IDT::regs));		
+		asm("sti");
 	}
-	cout<<"task= "<<current_task<<" esp= "<<(unsigned int)r->esp<<"\n";
-	return threads[current_task].r; //Return new stack pointer to ASM
+	//outportb(0x20, 0x20);
+	//outportl(0x80,inportl(0x80));
 }
 } //extern C
 
@@ -111,24 +114,40 @@ void thread1()
 {
 	for(;;)
 	{	
-		//cout.gotoxy(5,70);
-		//cout<<"hello ";
+		asm("cli");
+		cout.gotoxy(40,15);
+		cout<<"\\\n";
+		asm("sti");
 	}
 }
 void thread2()
 {
 	for(;;)
 	{
-		//cout.gotoxy(15,15);
-		cout<<"hello ";
+		asm("cli");		
+		cout.gotoxy(40,15);
+		cout<<"|\n";
+		asm("sti");
 	}
 }
 void thread3()
 {
 	for(;;)
 	{
-		//cout.gotoxy(15,15);
-		cout<<"World ";
+		asm("cli");
+		cout.gotoxy(40,15);
+		cout<<"/\n";
+		asm("sti");
+	}
+}
+void thread4()
+{
+	for(;;)
+	{
+		asm("cli");
+		cout.gotoxy(40,15);
+		cout<<"-\n";
+		asm("sti");
 	}
 }
 void init_tasks()
@@ -136,7 +155,8 @@ void init_tasks()
 	cout<<"initializing Tasks\n";
 	create_thread(0,thread1);
 	create_thread(1,thread2);
-	//create_thread(2,thread3);
+	create_thread(2,thread3);
+	create_thread(3,thread4);
 }
 
 
