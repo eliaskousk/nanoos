@@ -60,14 +60,21 @@ inline static void outsw(short port, unsigned short *data, unsigned count)
 		data++;
 	}
 }
+static volatile unsigned char enabled=0;
 inline static void enable()
 {
+	if(!enabled){
 	__asm__ __volatile__ ("sti": : );
+	enabled=1;
+	}
 }
 
 inline static void disable()
 {
+	if(enabled){
 	__asm__ __volatile__ ("cli" : :	);
+	enabled=0;
+	}
 }
 
 inline static void halt()

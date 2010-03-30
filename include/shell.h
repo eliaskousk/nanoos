@@ -5,6 +5,8 @@
 // shell header                                         //
 //                                                      //
 //////////////////////////////////////////////////////////
+#ifndef __SHELL_H__
+#define __SHELL_H__
 #include "OStream.h"
 #include "IStream.h"
 #include "string.h"
@@ -24,4 +26,5 @@ class shell
 
 		int get_num_args(const char *str);
 };
-
+void init_shell(void *);
+#endif
