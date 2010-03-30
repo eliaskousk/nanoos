@@ -115,4 +115,10 @@ void shell::help()
 	cout<<"\thdinfo   -> displays hard disk info if any\n";
 	cout<<"\tPCI      -> displays PCI bus in a crude way\n"; 
 }
-
+shell *myshell;
+void init_shell(void *)
+{
+	myshell =new shell;
+	myshell->start();
+	//return 1;
+}

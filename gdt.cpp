@@ -42,17 +42,10 @@ namespace GDT{
 		cout<<"setting up GDT\n";	
 		/* 0x00 -- null descriptor */
   		setup_entry (&gdt[0], 0, 0, 0, 0);
-	
 	  	/* 0x08 -- code segment descriptor */
   		setup_entry (&gdt[1], 0, 0xFFFFFFFF, ACS_CODE, 0xCF);
-	
   		/* 0x10 -- data segment descriptor */
   		setup_entry (&gdt[2], 0, 0xFFFFFFFF, ACS_DATA, 0xCF);
-	
-  		/* 0x18 -- stack segment descriptor */
-  		//	setup_GDT_entry (&gdt[3], 0, 0xFFFFFFFF, ACS_STACK, 0);
-		/* 0x20 -- video segment */
-		//	setup_GDT_entry (&gdt[4],0xB800,0xffff,ACS_DATA,0);
 		gdtr.base=(unsigned long) &gdt;
 		gdtr.limit=(sizeof(DESCR_SEG) * 3) - 1;
 		/* GDT loaded*/

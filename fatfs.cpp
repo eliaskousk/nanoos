@@ -22,9 +22,6 @@ bool fat16::valid_fat_fs()
 	unsigned char tmp,tmp1;
 	tmp=boot_sect.jmp_oem.jmp[0];
 	tmp1=boot_sect.jmp_oem.jmp[1];
-	//cout.flags(hex);
-	//cout<<(unsigned int)tmp<<" "<<(unsigned int)tmp1<<"\n";
-	//cout.flags(dec);
 	if((tmp == 0xeb) || (tmp == 0xe9 && tmp1 ==0x00))
 	{
 		//cout<<"a valid boot jump\n";

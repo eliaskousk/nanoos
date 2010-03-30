@@ -61,10 +61,12 @@ extern "C"{ void task_switch(IDT::regs *x);}
 	}*/
 	void TIMER::timer_handler(IDT::regs *r)	
 	{
+		extern volatile int tasker;		
 		timer_ticks++;
-		//if(timer_ticks%10==0){
+		if(timer_ticks%10==0){
+		if(tasker)
 		task_switch(r);//tasks enabled ????
-		//}
+		}
 		//outportb(0x20, 0x20);
 		//outportl(0x80,inportl(0x80));
 	}	
