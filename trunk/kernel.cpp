@@ -23,14 +23,14 @@
 //#include "floppy.h"
 #include "ide.h"
 #include "drive.h"
-
+#include "task.h"
 extern "C" int kmain(multibootInfo *mb);
 //extern struct multibootHeader mboot; //this comes from the loader.asm 
 extern void init_tasks();
 unsigned int memend; 
 unsigned int kend;
 char boot_dev[4];
-
+extern thread threads[32];
 int kmain(multibootInfo *mb)
 {
 	char ans;	
@@ -62,23 +62,31 @@ int kmain(multibootInfo *mb)
 	cout<<"===============================\n";	
 		
 	cout.flags(hex|showbase);
-	//kend=m_boot->get_k_end();
 	cout<<"Kernel start "<<(unsigned int)m_boot->get_k_start()<<" Kernel end "<<(unsigned int)m_boot->get_k_end()<<" kernel length ="<<(unsigned int)m_boot->get_k_length()<<"\n";
 	dump_heap();
 	cout.flags(dec);
-	//dump_heap();
-	//detect_floppy_cmos();
-	cout<<"Initializing tasking ";
-	init_tasks();
-	cout<<"done\n";
 	cout<<"installing timer interrupt ";
 	my_timer = new TIMER;	
 	my_timer->setup();
 	cout<<"done\n";
 	cout<<"\n\n"<<"Enabling Interrupts\n";
 	enable();
-	init_disks();
-	init_sys_drv();
+	cout<<"done\n";
+	cout<<"Initializing tasking ";
+	init_tasks();
+	cout<<"done\n";
+	cout<<"\n\n"<<"Enabling Interrupts\n";
+	//enable();
+	/*create_thread(2,thread1,NULL);
+	threads[1].state=RUNNING;
+	create_thread(3,thread2,NULL);
+	threads[2].state=RUNNING;
+	create_thread(4,thread3,NULL);
+	threads[3].state=RUNNING;
+	create_thread(5,thread4,NULL);
+	threads[4].state=RUNNING;*/
+	//init_disks();
+	//init_sys_drv();
 	//cout<<"Finished init_disks\n";
 	//unsigned char read_buf[512];
 	//if(disks[0])
@@ -102,8 +110,9 @@ int kmain(multibootInfo *mb)
 	cin>>ans;
 	cout<<"\nStarting Shell\n";
 	shell *myshell =new shell;
-	myshell->start();
-	
+	myshell->start();	
+	//create_thread(init_shell,NULL);
+	//threads[1].state=RUNNING;
 	//cout<<(char *)mb->commandLine<<"\n";
 	cout<<"\nReached End of kernel\n shoud not happen \n\nGOODBYE\n";
 	/*cout<<"testing new delete" <<"\n";

@@ -151,6 +151,14 @@ extern "C" {
 		}
 		cout<<"\n";
 	}
+	irqfunc_t get_vect(int irq_num)
+	{
+		return irq_routines[irq_num];
+	}
+	void set_vect(int irq_num,irqfunc_t vect)
+	{
+		irq_routines[irq_num]=vect;
+	}
 }; //end namespace IRQ
 
 
