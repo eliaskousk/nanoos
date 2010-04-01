@@ -19,7 +19,29 @@ typedef struct _malloc		/* Turbo C	DJGPP */
 	unsigned magic : 15;	/* 2 bytes total 4 bytes total */
 	unsigned used : 1;
 } malloc_t;		/* total   6 bytes	12 bytes */
-
+/*class Heap
+{
+	private:
+		static unsigned int heap_start;
+		static unsigned int heap_end;
+		static bool inited;
+		static Heap *heap;
+	public:
+		Heap(){};
+		static Heap *get_instance()
+		{
+			if(!heap)
+				heap=new Heap();
+			return heap;
+		};
+		void init();
+		bool is_inited(){ return inited;};
+		void *alloc(size_t size);
+		void free(void *blk);
+		void *realloc(void *blk,size_t size);
+		void dump_heap();
+};
+ */
 void dump_heap();
 void init_heap();
 //static void *kbrk(int *delta);

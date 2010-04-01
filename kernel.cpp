@@ -38,9 +38,9 @@ int kmain(multibootInfo *mb)
 	kend=mboot.kernel_end;	
 	multiboot *m_boot=multiboot::instance();
 	construct();
-	init_heap();	
 	cout<<"Nano OS is booting\n";
-	String::strcpy(boot_dev,(const char *)mb->bootDevice);		
+	String::strcpy(boot_dev,(const char *)mb->bootDevice);	
+	init_heap();
 	cout<<"Setting up GDT ";
 	GDT::setup();
 	cout<<"done\n";
@@ -75,16 +75,8 @@ int kmain(multibootInfo *mb)
 	cout<<"Initializing tasking ";
 	init_tasks();
 	cout<<"done\n";
-	cout<<"\n\n"<<"Enabling Interrupts\n";
-	//enable();
-	/*create_thread(2,thread1,NULL);
-	threads[1].state=RUNNING;
-	create_thread(3,thread2,NULL);
-	threads[2].state=RUNNING;
-	create_thread(4,thread3,NULL);
-	threads[3].state=RUNNING;
-	create_thread(5,thread4,NULL);
-	threads[4].state=RUNNING;*/
+	
+	
 	//init_disks();
 	//init_sys_drv();
 	//cout<<"Finished init_disks\n";
@@ -101,7 +93,7 @@ int kmain(multibootInfo *mb)
 	//IDE *ide3=new IDE(0x8000,0x170,0x3f6,8,1,0xb0);
 	//cout<<"\n\n"<<"Enabling Interrupts\n";
 	//enable();
-	cout<<"\n"<<"Dumping IRQ routines \n";
+	/*cout<<"\n"<<"Dumping IRQ routines \n";
 	IRQ::dump_irq_routines();
 	cout<<"\n";
 	
