@@ -107,20 +107,31 @@ void destruct()
 //overload the operator "new"
 void* operator new (unsigned int size)
 {
-	return (void*) kmalloc(size);
+	/*Heap *mheap= Heap::get_instance();
+	if(!mheap->is_inited())
+		mheap->init();
+	return ((void*)mheap->alloc(size));*/
+	return ((void*)kmalloc(size));
 }
 
 //overload the operator "new[]"
 void* operator new[] (unsigned int size)
 {
-	return (void *) kmalloc(size);
+	/*Heap *mheap= Heap::get_instance();
+	if(!mheap->is_inited())
+		mheap->init();
+	return ((void *)mheap->alloc(size));*/
+	return ((void*)kmalloc(size));
 }
 
 //overload the operator "delete"
 void operator delete (void * p)
 {
+	/*Heap *mheap= Heap::get_instance();
+	if(!mheap->is_inited())
+		mheap->init();
+	mheap->free(p);*/
 	kfree(p);
-
 	//fixme("kfree not implemented yet");
 	//cout<< "kfree not implemented yet\n";
 	// WARNING: This could cause a segfault if it the video_textmode object (vid)
@@ -132,7 +143,11 @@ void operator delete[] (void * p)
 {
 	//fixme("kfree not implemented yet");
 	//cout << "kfree not implemented yet\n";
-	 kfree(p);
+	/*Heap *mheap= Heap::get_instance();
+	if(!mheap->is_inited())
+		mheap->init();
+	mheap->free(p);*/
 	 // FIXME: This needs to be implemented
+	kfree(p);
 	 
 }

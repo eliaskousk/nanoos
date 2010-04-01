@@ -13,21 +13,12 @@
 #include "task.h"
 using namespace IDT;
 using namespace String;
-/*typedef enum states{
-		CREATED=1,
-		READY,
-		RUNNING,
-		WAITING,
-		BLOCKED,
-		FINISHED,
-	}states;
 
-*/
 typedef void (*func)(void *earg);
 thread threads[32]; //we will have maximum 32 tasks running.		
 
 static int current_task=-1;// no task is started.
-static char tid=1;  //tid=0 is for idle process
+static int tid=1;  //tid=0 is for idle process
 // this function will create a task and add to the threads[]
 volatile int tasker=0;
 void create_thread(func entry,void *args)
@@ -54,7 +45,7 @@ void create_thread(func entry,void *args)
 		asm("hlt");
 	} 
 	memset((void*)tr,0,sizeof(IDT::regs));
-	threads[id].stack= new char[1024];
+	threads[id].stack= new unsigned char[1024];
 	if(threads[id].stack==NULL)
 	{
 		cout<<"Can't allocate memory for stack\n";
