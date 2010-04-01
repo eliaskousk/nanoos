@@ -46,19 +46,7 @@ extern "C"{ void task_switch(IDT::regs *x);}
 		cur=get_ticks();
 		while(cur+ms-get_ticks());
 	}
-	/*
-	void TIMER::timer_handler(IDT::regs *r)	
-	{
-		extern IDT::regs *ktask_switch(IDT::regs *x);
-		//unsigned int old_esp=(volatile unsigned int)r->esp;		
-		//cout<<"Old= "<<(unsigned int)old_esp;		
-		// Increment our 'tick count' 
-		//cout<<(unsigned int)r->int_no;
-		timer_ticks++;
-		r=ktask_switch(r);//tasks enabled ????
-		//cout<<"taskswitch\n";
-		//cout<<" cur= "<<(unsigned int)r->esp<<'\n';
-	}*/
+	
 	void TIMER::timer_handler(IDT::regs *r)	
 	{
 		extern volatile int tasker;		

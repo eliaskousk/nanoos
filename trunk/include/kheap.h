@@ -7,7 +7,7 @@
 //////////////////////////////////////////////////////////
 #ifndef __KHEAP_H__
 #define __KHEAP_H__
-
+#include "singleton.h"
 #ifndef NULL
 #define NULL 0
 #endif 
@@ -19,21 +19,14 @@ typedef struct _malloc		/* Turbo C	DJGPP */
 	unsigned magic : 15;	/* 2 bytes total 4 bytes total */
 	unsigned used : 1;
 } malloc_t;		/* total   6 bytes	12 bytes */
-/*class Heap
+/*class Heap : public Singleton<Heap>
 {
 	private:
-		static unsigned int heap_start;
-		static unsigned int heap_end;
-		static bool inited;
-		static Heap *heap;
+		unsigned int heap_start;
+		unsigned int heap_end;
+		bool inited;
 	public:
 		Heap(){};
-		static Heap *get_instance()
-		{
-			if(!heap)
-				heap=new Heap();
-			return heap;
-		};
 		void init();
 		bool is_inited(){ return inited;};
 		void *alloc(size_t size);
@@ -41,7 +34,7 @@ typedef struct _malloc		/* Turbo C	DJGPP */
 		void *realloc(void *blk,size_t size);
 		void dump_heap();
 };
- */
+*/
 void dump_heap();
 void init_heap();
 //static void *kbrk(int *delta);
