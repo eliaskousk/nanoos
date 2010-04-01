@@ -11,6 +11,7 @@
 #include "idt.h"
 #include "low-io.h"
 #include "task.h"
+#include "shell.h"
 using namespace IDT;
 using namespace String;
 
@@ -42,26 +43,22 @@ void create_thread(func entry,void *args)
 	if(!tr)
 	{
 		cout<<"Can't allocate memory for regs\n";
-		asm("hlt");
+		halt();
 	} 
 	memset((void*)tr,0,sizeof(IDT::regs));
 	threads[id].stack= new unsigned char[1024];
 	if(threads[id].stack==NULL)
 	{
 		cout<<"Can't allocate memory for stack\n";
-		asm("hlt");
+		halt();
 	}
 	threads[id].arg=args;
-	//threads[id].r=(IDT::regs *)kmalloc(sizeof(IDT::regs));
+	
 	threads[id].r=tr;	
 	threads[id].id=tid;
 	++tid;
 	threads[id].r->esp= (unsigned int)threads[id].stack+1024;
-	/*if(!threads[id].r->esp)
-	{
-		cout<<"Cant allocate memory for stack\n";
-		asm("hlt");
-	}*/	
+		
 	threads[id].r->gs = 0x10;
 	threads[id].r->fs = 0x10;
 	threads[id].r->es = 0x10;
@@ -80,36 +77,11 @@ void create_thread(func entry,void *args)
 	threads[id].r->eflags=0x0202;
 	memcpy((unsigned int *)threads[id].r->esp,(unsigned int*)threads[id].r,sizeof(IDT::regs));
 	threads[id].state=CREATED;	
-	//threads[id].r->esp=threads[id].r->esp+sizeof(IDT::regs);	
-	//cout<<"Createing Task stack at = "<<(unsigned int)threads[id].r->esp<<"\n";
-	/*				 //to the stack for us
-	//First, this stuff is pushed by the processor
-
-	*--stack = 0x0202; //This is EFLAGS
-	*--stack = 0x08;   //This is CS, our code segment
-	*--stack = (unsigned long)mythread; //This is EIP
-//Next, the stuff pushed by 'pusha'
-	*--stack = 0; //EDI
-	*--stack = 0; //ESI
-	*--stack = 0; //EBP
-	*--stack = 0; //Just an offset, no value
-	*--stack = 0; //EBX
-	*--stack = 0; //EDX
-	*--stack = 0; //ECX
-	*--stack = 0; //EAX
-//Now these are the data segments pushed by the IRQ handler
-	*--stack = 0x10; //DS
-	*--stack = 0x10; //ES
-	*--stack = 0x10; //FS
-	*--stack = 0x10; //GS
-	*/
+	
 	enable();
 }
 
-extern "C" { extern unsigned int read_eip();
-	     extern void cpu_context_restore(IDT::regs *r);
-	     extern void cpu_context_save(IDT::regs *r);	
- 	}			
+extern "C" {extern unsigned int read_eip();};			
 //Switch between our two tasks
 //Notice how we get the old esp from the ASM code
 //It's not a pointer, but we actually get the ESP value
@@ -125,7 +97,7 @@ void task_switch(IDT::regs *r)
 	if(current_task != -1)
 	{ 
 		//asm("cli");
-		//disable();
+		disable();
 		memcpy(threads[current_task].r,r,sizeof(IDT::regs));
 		++current_task;
 		while((threads[current_task].state==BLOCKED)||(threads[current_task].state==FINISHED))
@@ -133,16 +105,16 @@ void task_switch(IDT::regs *r)
 		current_task%=32;
 		memcpy(r,threads[current_task].r,sizeof(IDT::regs));		
 		//asm("sti");
-		//enable();		
+		enable();		
 	}
 	else
 	{
 		//asm("cli");
-		//disable();		
+		disable();		
 		current_task = 0; //We just started multi-tasking, start with task 0
 		memcpy(r,threads[current_task].r,sizeof(IDT::regs));		
 		//asm("sti");
-		//enable();
+		enable();
 	}
 	
 	//outportb(0x20, 0x20);
@@ -155,43 +127,64 @@ void idle(void *)
 }
 void thread1(void *)
 {
+	int x,y;
 	for(;;)
 	{	
 		disable();
-		cout.gotoxy(40,15);
+		x=cout.GetX();
+		y=cout.GetY();		
+		cout.gotoxy(70,5);
 		cout<<"\\\n";
+		cout.gotoxy(x,y);
 		enable();
 	}
 }
 void thread2(void *)
 {
+	int x,y;	
 	for(;;)
 	{
-		disable();		
-		cout.gotoxy(40,15);
+		disable();
+		x=cout.GetX();
+		y=cout.GetY();		
+		cout.gotoxy(70,5);
 		cout<<"|\n";
+		cout.gotoxy(x,y);
 		enable();
 	}
 }
 void thread3(void *)
 {
+	int x,y;	
 	for(;;)
 	{
 		disable();
-		cout.gotoxy(40,15);
+		x=cout.GetX();
+		y=cout.GetY();
+		cout.gotoxy(70,5);
 		cout<<"/\n";
+		cout.gotoxy(x,y);
 		enable();
 	}
 }
 void thread4(void *)
 {
+	int x,y;	
 	for(;;)
 	{
 		disable();
-		cout.gotoxy(40,15);
+		x=cout.GetX();
+		y=cout.GetY();		
+		cout.gotoxy(70,5);
 		cout<<"-\n";
+		cout.gotoxy(x,y);
 		enable();
 	}
+}
+void thread5(void *)
+{
+	shell *s=new shell();
+	s->start();
 }
 void init_tasks()
 {
@@ -201,7 +194,7 @@ void init_tasks()
 		create_thread(idle,NULL);
 		threads[i].state=FINISHED;
 	}
-	//threads[0].state=RUNNING;
+	threads[0].state=RUNNING;
 	create_thread(thread1,NULL);
 	threads[1].state=RUNNING;
 	create_thread(thread2,NULL);
@@ -210,6 +203,8 @@ void init_tasks()
 	threads[3].state=RUNNING;
 	create_thread(thread4,NULL);
 	threads[4].state=RUNNING;
+	create_thread(thread5,NULL);
+	threads[5].state=RUNNING;
 	tasker=1;
 }
 

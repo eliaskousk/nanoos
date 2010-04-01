@@ -91,7 +91,7 @@ const char *shell::logo[6]={
 void shell::meminfo()
 {
 	extern unsigned int memend;
-	multiboot *mbt=multiboot::instance();
+	multiboot *mbt=multiboot::Instance();
 	cout.flags(hex|showbase);
 	cout<<"Kernel starts at "<<(unsigned int)mbt->get_k_start()<<"\n";
 	cout<<"Kernel Ends at   "<<(unsigned int)mbt->get_k_end()<<"\n";

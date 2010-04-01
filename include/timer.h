@@ -8,7 +8,9 @@
 #ifndef __TIMER_H__
 #define __TIMER_H__
 #include "idt.h"
-class TIMER{ //timer interrupt
+#include "singleton.h"
+class TIMER: public Singleton<TIMER>
+{ //timer interrupt
 		public:
 			TIMER(){};
 			~TIMER(){};		

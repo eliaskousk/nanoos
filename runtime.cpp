@@ -22,8 +22,17 @@ extern "C"
         void __cxa_finalize(void *d);
         };
 
-void *__dso_handle; /*only the address of this symbol is taken by gcc*/
+void *__dso_handle(0); /*only the address of this symbol is taken by gcc*/
+void *__stack_chk_guard(0);
+namespace __cxxabiv1
+{
+	// Some guard variables needed by GCC.
+	__extension__ typedef int __guard __attribute__((mode(__DI__)));
 
+	extern "C" int __cxa_guard_acquire(__guard *Guard)		{ return !(*(char *) (Guard)); }
+	extern "C" void __cxa_guard_release(__guard *Guard)		{ (*(char *) Guard) = 1; }
+	extern "C" void __cxa_guard_abort(__guard *)			{ }
+}
 struct object
 {
         void (*f)(void*);
@@ -107,9 +116,13 @@ void destruct()
 //overload the operator "new"
 void* operator new (unsigned int size)
 {
-	/*Heap *mheap= Heap::get_instance();
+	/*Heap *mheap= Heap::Instance();
+	cout<<"Heap at "<<(unsigned int)mheap<<"\n";
 	if(!mheap->is_inited())
+	{
+		cout<<"in new Heap uninitialized\n"; 
 		mheap->init();
+	}
 	return ((void*)mheap->alloc(size));*/
 	return ((void*)kmalloc(size));
 }
@@ -117,7 +130,7 @@ void* operator new (unsigned int size)
 //overload the operator "new[]"
 void* operator new[] (unsigned int size)
 {
-	/*Heap *mheap= Heap::get_instance();
+	/*Heap *mheap= Heap::Instance();
 	if(!mheap->is_inited())
 		mheap->init();
 	return ((void *)mheap->alloc(size));*/
@@ -127,7 +140,7 @@ void* operator new[] (unsigned int size)
 //overload the operator "delete"
 void operator delete (void * p)
 {
-	/*Heap *mheap= Heap::get_instance();
+	/*Heap *mheap= Heap::Instance();
 	if(!mheap->is_inited())
 		mheap->init();
 	mheap->free(p);*/
@@ -143,11 +156,25 @@ void operator delete[] (void * p)
 {
 	//fixme("kfree not implemented yet");
 	//cout << "kfree not implemented yet\n";
-	/*Heap *mheap= Heap::get_instance();
+	/*Heap *mheap= Heap::Instance();
 	if(!mheap->is_inited())
 		mheap->init();
 	mheap->free(p);*/
 	 // FIXME: This needs to be implemented
 	kfree(p);
 	 
+}
+extern "C" void __stack_chk_guard_setup()
+{
+	unsigned char *Guard;
+	Guard = (unsigned char *) &__stack_chk_guard;
+	Guard[sizeof(__stack_chk_guard) - 1] = 255;
+	Guard[sizeof(__stack_chk_guard) - 2] = '\n';
+	Guard[0] = 0;
+}
+
+// ----- Called when the SSP (Stack-Smashing Protector) indicates a buffer overflow.
+extern "C" void __attribute__((noreturn)) __stack_chk_fail()
+{
+	for(;;);
 }

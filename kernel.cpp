@@ -33,11 +33,12 @@ char boot_dev[4];
 extern thread threads[32];
 int kmain(multibootInfo *mb)
 {
-	char ans;	
+	char ans;
+	construct();	
 	memend=mb->memoryUpper*1024+0x100000; //memory end upper memory in bytes +1MB
 	kend=mboot.kernel_end;	
-	multiboot *m_boot=multiboot::instance();
-	construct();
+	multiboot *m_boot;
+	
 	cout<<"Nano OS is booting\n";
 	String::strcpy(boot_dev,(const char *)mb->bootDevice);	
 	init_heap();
@@ -53,7 +54,7 @@ int kmain(multibootInfo *mb)
 	cout<<"installing key board \n";
 	kbd::setup();
 	cout<<"done\n";
-	m_boot=multiboot::instance();
+	m_boot=multiboot::Instance();
 	m_boot->set_multiboot_info(mb);
 	m_boot->set_multiboot_hdr();
 	cout<<"===============================\n";
@@ -63,13 +64,16 @@ int kmain(multibootInfo *mb)
 		
 	cout.flags(hex|showbase);
 	cout<<"Kernel start "<<(unsigned int)m_boot->get_k_start()<<" Kernel end "<<(unsigned int)m_boot->get_k_end()<<" kernel length ="<<(unsigned int)m_boot->get_k_length()<<"\n";
-	dump_heap();
+	
 	cout.flags(dec);
 	cout<<"installing timer interrupt ";
-	my_timer = new TIMER;	
+	TIMER *my_timer =  TIMER::Instance();	
 	my_timer->setup();
 	cout<<"done\n";
-	cout<<"\n\n"<<"Enabling Interrupts\n";
+	cout<<"my_timer at "<<(unsigned int)my_timer<<"\n";	
+	cout<<"Mboot at "<<(unsigned int)m_boot<<"\n";
+	dump_heap();
+	cout<<"\n\n"<<"Enabling Interrupts\n";	
 	enable();
 	cout<<"done\n";
 	cout<<"Initializing tasking ";
@@ -93,20 +97,22 @@ int kmain(multibootInfo *mb)
 	//IDE *ide3=new IDE(0x8000,0x170,0x3f6,8,1,0xb0);
 	//cout<<"\n\n"<<"Enabling Interrupts\n";
 	//enable();
-	/*cout<<"\n"<<"Dumping IRQ routines \n";
+	cout<<"\n"<<"Dumping IRQ routines \n";
 	IRQ::dump_irq_routines();
-	cout<<"\n";
+	cout<<"\nDone\n";
 	
 	
 	cout<<"Press any key to start shell";
 	cin>>ans;
 	cout<<"\nStarting Shell\n";
-	shell *myshell =new shell;
-	myshell->start();	
+	//shell *myshell =new shell;
+	//myshell->start();	
 	//create_thread(init_shell,NULL);
 	//threads[1].state=RUNNING;
 	//cout<<(char *)mb->commandLine<<"\n";
 	cout<<"\nReached End of kernel\n shoud not happen \n\nGOODBYE\n";
+	disable();
+	halt();	
 	/*cout<<"testing new delete" <<"\n";
 	int *a,*b,*c;
 	dump_heap();

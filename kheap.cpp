@@ -16,7 +16,9 @@ void Heap::init()
 	if(!inited)
 	{
 		cout<<"Initializing System Heap\n";
-		malloc_t *m=(malloc_t*)heap_end;
+		heap_start=kend;
+		heap_end=memend;
+		malloc_t *m=(malloc_t*)heap_start;
 		if(m==NULL)
 		{
 			cout.SetColour(RED,BLACK,0);
@@ -123,9 +125,9 @@ void Heap::free(void *blk)
 	{	
 		while(!m->used && m->next != NULL && !m->next->used)
 		{
-///* resize this block 
+// resize this block 
 			m->size += sizeof(malloc_t) + m->next->size;
-///* merge with next block 
+// merge with next block 
 			m->next = m->next->next;
 		}
 	}
@@ -135,7 +137,7 @@ void *Heap::realloc(void *blk,size_t size)
 	void *new_blk;
 	malloc_t *m;
 
-///* size == 0: free block 
+// size == 0: free block 
 	if(size == 0)
 	{
 		if(blk != NULL)
@@ -144,9 +146,9 @@ void *Heap::realloc(void *blk,size_t size)
 	}
 	else
 	{
-//* allocate new block 
+// allocate new block 
 		new_blk = alloc(size);
-//* if allocation OK, and if old block exists, copy old block to new 
+// if allocation OK, and if old block exists, copy old block to new 
 		if(new_blk != NULL && blk != NULL)
 		{
 			m = (malloc_t *)((char *)blk - sizeof(malloc_t));
@@ -159,11 +161,11 @@ void *Heap::realloc(void *blk,size_t size)
 				cout.flags(dec);
 				return NULL;
 			}
-//* copy minimum of old and new block sizes 
+// copy minimum of old and new block sizes 
 			if(size > m->size)
 				size = m->size;
 			String::memcpy(new_blk, blk, size);
-//* free the old block 
+// free the old block 
 			free(blk);
 		}
 	}
@@ -174,7 +176,7 @@ void Heap::dump_heap()
 	unsigned blks_used = 0, blks_free = 0;
 	size_t bytes_used = 0, bytes_free = 0;
 	malloc_t *m;
-	int total;
+	unsigned int total;
 	cout.flags(hex|showbase);
 	cout<<"===============================================\n";
 	for(m = (malloc_t *)heap_start; m != NULL; m = m->next)
@@ -184,13 +186,13 @@ void Heap::dump_heap()
 		{
 			blks_used++;
 			bytes_used += m->size;
-			cout<<"used\n";
+			cout<<" used\n";
 		}
 		else
 		{
 			blks_free++;
 			bytes_free += m->size;
-			cout<<"free\n";
+			cout<<" free\n";
 		}
 	}
 	cout<<"blks:  "<<blks_used<<" used, "<<blks_free<<" free, "<<blks_used + blks_free<<" total\n";

@@ -14,13 +14,31 @@ template <class dType> class singleton
 	public:
 		static dType *instance()
 		{
-			if(!object)
-				object= new dType;
-			if(!object)
+			if(!singleton::object)
+				singleton::object= new dType;
+			if(!singleton::object)
 				cout<<"Horrible Error\n";
 			return object;
 		}
 };
 template <class dType> dType* singleton<dType>::object=NULL;
+//stolen from OsDynaMix as my singleton class gave me problem and corrupt
+//heap
+template<typename T> class Singleton
+{
+private:
+	Singleton<T> operator=(const Singleton<T>&) {}
+	Singleton(const Singleton<T>&) {}
 
+protected:
+	Singleton() {}
+	~Singleton() {}
+
+public:
+	static T *Instance()
+	{
+		static T Object;
+		return &Object;
+	}
+};
 #endif //singleton		

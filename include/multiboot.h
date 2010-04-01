@@ -91,7 +91,7 @@ extern multibootHeader mboot; //from startup.asm
 //class multiboot
 
 //class multiboot :public singleton<multiboot>
-class multiboot : public singleton<multiboot>
+class multiboot : public Singleton<multiboot>
 {
 	private:
 		static multibootInfo *binfo;
