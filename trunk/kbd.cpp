@@ -239,5 +239,6 @@ void setup()
 	send_data(0xFF);		//Restart keyboard
 	send_data(0xF4);		//Enables keyboard and Scanning	
 	IRQ::install_handler(1,&kbd_handler);
+	IRQ::enable_irq(1);
 }
 }; //end namespace kbd

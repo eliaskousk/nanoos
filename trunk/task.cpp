@@ -203,8 +203,8 @@ void init_tasks()
 	threads[3].state=RUNNING;
 	create_thread(thread4,NULL);
 	threads[4].state=RUNNING;
-	create_thread(thread5,NULL);
-	threads[5].state=RUNNING;
+	//create_thread(thread5,NULL);
+	//threads[5].state=RUNNING;
 	tasker=1;
 }
 

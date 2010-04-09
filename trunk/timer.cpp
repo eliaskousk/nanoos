@@ -31,6 +31,7 @@ extern "C"{ void task_switch(IDT::regs *x);}
 		timer_phase(100);
 		cout<<"Installing handler \n"; 
 		IRQ::install_handler(0,TIMER::timer_handler);
+		IRQ::enable_irq(0);
 	}
 	void TIMER::set_ticks(int t)
 	{ 

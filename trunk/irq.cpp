@@ -10,7 +10,7 @@
 #include "OStream.h"
 //extern void kprintf(const char *fmt,...);
 namespace IRQ{
-
+static unsigned short volatile IRQ_mask=0xffff;
 extern "C" {
 		irqfunc_t irq_routines[16] =
 		{
@@ -137,7 +137,7 @@ extern "C" {
 		IDT::set_gate(46, _irq14, 0x08, 0x8E);
     		IDT::set_gate(47, _irq15, 0x08, 0x8E);
 		cout<<"IRQ initialized\n";
-     		outportb(0x21, 0xFC);
+     		outportb(0x21, 0xFF);
 		outportb(0xA1, 0xFF);
 
 	}
@@ -158,6 +158,38 @@ extern "C" {
 	void set_vect(int irq_num,irqfunc_t vect)
 	{
 		irq_routines[irq_num]=vect;
+	}
+	// return current IRQ mask
+	unsigned short get_irq_mask()
+	{
+		return IRQ_mask;
+	}
+	// set IRQ mask 
+	void set_irq_mask(unsigned short mask)
+	{
+		unsigned char cmask;
+		cmask=mask&0xff;
+		outportb(0x21,cmask); // mask master controller
+		cmask=(mask>>8)&0xff;
+		outportb(0xA1,cmask); // mask slave controller
+		IRQ_mask=mask;
+		outportl(0x80,inportl(0x80)); //iodelay
+	}
+	// enable a perticular IRQ
+	void enable_irq(int irq)
+	{
+		unsigned short set;
+		set=~(1<<irq);
+		set&=get_irq_mask();
+		set_irq_mask(set);
+	}
+	// disable or stop a perticular IRQ
+	void disable_irq(int irq)
+	{
+		unsigned short set;
+		set=(1<<irq);
+		set|=get_irq_mask();
+		set_irq_mask(set);
 	}
 }; //end namespace IRQ
 
