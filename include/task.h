@@ -15,6 +15,7 @@
 using namespace IDT;
 using namespace String;
 typedef enum states{
+		INVALID=0,
 		CREATED=1,
 		READY,
 		RUNNING,
@@ -25,12 +26,13 @@ typedef enum states{
 
 typedef struct thread
 {
-	unsigned int id;
+	unsigned int stack_top; 	
+	unsigned char *stack;	
 	IDT::regs *r;
-	unsigned char *stack;
 	void *arg;
 	states state;
 	int retval;
+	unsigned int id;
 }thread;
  
 typedef void (*func)(void *earg);
