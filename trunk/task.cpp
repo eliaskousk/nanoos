@@ -39,26 +39,29 @@ void create_thread(func entry,void *args)
 		return;
 	}
 	id=tid;
-	IDT::regs *tr=(IDT::regs*)new(IDT::regs);
+	/*IDT::regs *tr=(IDT::regs*)new(IDT::regs);
 	if(!tr)
 	{
 		cout<<"Can't allocate memory for regs\n";
 		halt();
 	} 
-	memset((void*)tr,0,sizeof(IDT::regs));
+	memset((void*)tr,0,sizeof(IDT::regs));*/
 	threads[id].stack= new unsigned char[1024];
 	if(threads[id].stack==NULL)
 	{
 		cout<<"Can't allocate memory for stack\n";
-		halt();
+		enable();
+		return;
 	}
+	threads[id].stack_top=(unsigned int)threads[id].stack+1024;
 	threads[id].arg=args;
 	
-	threads[id].r=tr;	
+	//threads[id].r=tr;	
 	threads[id].id=tid;
 	++tid;
-	threads[id].r->esp= (unsigned int)threads[id].stack+1024;
-		
+	//threads[id].r->esp= (unsigned int)threads[id].stack+1024;
+	threads[id].stack_top-=sizeof(IDT::regs);
+	threads[id].r=(IDT::regs*)threads[id].stack_top;	
 	threads[id].r->gs = 0x10;
 	threads[id].r->fs = 0x10;
 	threads[id].r->es = 0x10;
@@ -66,7 +69,7 @@ void create_thread(func entry,void *args)
 	threads[id].r->edi=0;
 	threads[id].r->esi=0;
 	threads[id].r->ebp=0;
-	threads[id].r->esp=0;
+	threads[id].r->esp=threads[id].stack_top;
 	threads[id].r->ebx=0;
 	threads[id].r->edx=0;
 	threads[id].r->ecx=0;
@@ -75,9 +78,7 @@ void create_thread(func entry,void *args)
 	//threads[id].err_code=0x;
 	threads[id].r->cs=0x8;
 	threads[id].r->eflags=0x0202;
-	memcpy((unsigned int *)threads[id].r->esp,(unsigned int*)threads[id].r,sizeof(IDT::regs));
 	threads[id].state=CREATED;	
-	
 	enable();
 }
 
