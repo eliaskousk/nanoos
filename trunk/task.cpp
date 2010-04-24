@@ -12,6 +12,7 @@
 #include "low-io.h"
 #include "task.h"
 #include "shell.h"
+#include "timer.h"
 using namespace IDT;
 using namespace String;
 
@@ -22,6 +23,20 @@ static int current_task=-1;// no task is started.
 static int tid=1;  //tid=0 is for idle process
 // this function will create a task and add to the threads[]
 volatile int tasker=0;
+void thread_stack_push(thread *t, unsigned int val)
+{
+	t->stack_top-=4;
+	*((unsigned int*)t->stack_top)=val;
+}
+void thread_run(func entry,void *args)
+{
+	enable();	
+	entry(args);
+	disable();
+	cout<<"Exit!!!\n";
+	threads[current_task].state=FINISHED;
+	enable();
+}
 void create_thread(func entry,void *args)
 {
 	disable();
@@ -39,13 +54,6 @@ void create_thread(func entry,void *args)
 		return;
 	}
 	id=tid;
-	/*IDT::regs *tr=(IDT::regs*)new(IDT::regs);
-	if(!tr)
-	{
-		cout<<"Can't allocate memory for regs\n";
-		halt();
-	} 
-	memset((void*)tr,0,sizeof(IDT::regs));*/
 	threads[id].stack= new unsigned char[1024];
 	if(threads[id].stack==NULL)
 	{
@@ -55,11 +63,12 @@ void create_thread(func entry,void *args)
 	}
 	threads[id].stack_top=(unsigned int)threads[id].stack+1024;
 	threads[id].arg=args;
-	
-	//threads[id].r=tr;	
 	threads[id].id=tid;
 	++tid;
-	//threads[id].r->esp= (unsigned int)threads[id].stack+1024;
+
+	thread_stack_push(&threads[id],(unsigned int)args);
+	//thread_stack_push(&threads[id],(unsigned int)entry);
+	thread_stack_push(&threads[id],0);
 	threads[id].stack_top-=sizeof(IDT::regs);
 	threads[id].r=(IDT::regs*)threads[id].stack_top;	
 	threads[id].r->gs = 0x10;
@@ -74,7 +83,7 @@ void create_thread(func entry,void *args)
 	threads[id].r->edx=0;
 	threads[id].r->ecx=0;
 	threads[id].r->eax=0;
-	threads[id].r->eip=(unsigned long)entry;
+	threads[id].r->eip=(unsigned int)entry;
 	//threads[id].err_code=0x;
 	threads[id].r->cs=0x8;
 	threads[id].r->eflags=0x0202;
@@ -97,36 +106,33 @@ void task_switch(IDT::regs *r)
 	
 	if(current_task != -1)
 	{ 
-		//asm("cli");
+		
 		disable();
 		memcpy(threads[current_task].r,r,sizeof(IDT::regs));
 		++current_task;
 		while((threads[current_task].state==BLOCKED)||(threads[current_task].state==FINISHED))
 			++current_task;			
 		current_task%=32;
-		memcpy(r,threads[current_task].r,sizeof(IDT::regs));		
-		//asm("sti");
+		memcpy(r,threads[current_task].r,sizeof(IDT::regs));
 		enable();		
 	}
 	else
 	{
-		//asm("cli");
 		disable();		
 		current_task = 0; //We just started multi-tasking, start with task 0
-		memcpy(r,threads[current_task].r,sizeof(IDT::regs));		
-		//asm("sti");
+		memcpy(r,threads[current_task].r,sizeof(IDT::regs));
 		enable();
 	}
-	
-	//outportb(0x20, 0x20);
-	//outportl(0x80,inportl(0x80));
 }
 } //extern C
+//TIMER *tm=TIMER::Instance();
 void idle(void *)
 {
-	for(;;){};
+	for(;;){
+	//tm->sleep(10);
+	}
 }
-void thread1(void *)
+void thread1(void *n)
 {
 	int x,y;
 	for(;;)
@@ -135,12 +141,13 @@ void thread1(void *)
 		x=cout.GetX();
 		y=cout.GetY();		
 		cout.gotoxy(70,5);
-		cout<<"\\\n";
+		cout<<"\\\n"<<"   "<<*(int*)n<<"   \n";
 		cout.gotoxy(x,y);
 		enable();
+		//tm->sleep(10);
 	}
 }
-void thread2(void *)
+void thread2(void *n)
 {
 	int x,y;	
 	for(;;)
@@ -149,12 +156,13 @@ void thread2(void *)
 		x=cout.GetX();
 		y=cout.GetY();		
 		cout.gotoxy(70,5);
-		cout<<"|\n";
+		cout<<"|\n"<<"   "<<*(int*)n<<"   \n";
 		cout.gotoxy(x,y);
 		enable();
+		//tm->sleep(10);
 	}
 }
-void thread3(void *)
+void thread3(void *n)
 {
 	int x,y;	
 	for(;;)
@@ -163,12 +171,13 @@ void thread3(void *)
 		x=cout.GetX();
 		y=cout.GetY();
 		cout.gotoxy(70,5);
-		cout<<"/\n";
+		cout<<"/\n"<<"   "<<*(int*)n<<"   \n";
 		cout.gotoxy(x,y);
 		enable();
+		//tm->sleep(10);
 	}
 }
-void thread4(void *)
+void thread4(void *n)
 {
 	int x,y;	
 	for(;;)
@@ -177,9 +186,10 @@ void thread4(void *)
 		x=cout.GetX();
 		y=cout.GetY();		
 		cout.gotoxy(70,5);
-		cout<<"-\n";
+		cout<<"-\n"<<"   "<<*(int*)n<<"   \n";
 		cout.gotoxy(x,y);
 		enable();
+		//tm->sleep(10);
 	}
 }
 void thread5(void *)
@@ -196,14 +206,15 @@ void init_tasks()
 		threads[i].state=FINISHED;
 	}
 	threads[0].state=RUNNING;
-	create_thread(thread1,NULL);
+	create_thread(thread1,&current_task);
 	threads[1].state=RUNNING;
-	create_thread(thread2,NULL);
+	create_thread(thread2,&current_task);
 	threads[2].state=RUNNING;
-	create_thread(thread3,NULL);
+	create_thread(thread3,&current_task);
 	threads[3].state=RUNNING;
-	create_thread(thread4,NULL);
+	create_thread(thread4,&current_task);
 	threads[4].state=RUNNING;
+	//cout<<*((unsigned int*)&current_task)<<"\n";
 	//create_thread(thread5,NULL);
 	//threads[5].state=RUNNING;
 	tasker=1;
