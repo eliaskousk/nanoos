@@ -21,7 +21,7 @@ class TIMER: public Singleton<TIMER>
 			void set_ticks(int t);
 			void sleep(int ms);
 			//static void timer_handler(IDT::regs *r);
-			static void timer_handler(IDT::regs *r);
+			static void timer_handler(void *sp);
 		private:
 			static int timer_ticks;
 }; 

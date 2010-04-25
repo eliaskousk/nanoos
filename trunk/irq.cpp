@@ -10,13 +10,27 @@
 #include "OStream.h"
 //extern void kprintf(const char *fmt,...);
 namespace IRQ{
-static unsigned short volatile IRQ_mask=0xffff;
+static unsigned short volatile IRQ_mask;
 extern "C" {
 		irqfunc_t irq_routines[16] =
 		{
 		    0, 0, 0, 0, 0, 0, 0, 0,
 		    0, 0, 0, 0, 0, 0, 0, 0
 		};
+	void end_irq(IDT::regs *r)
+	{
+		unsigned char irq,cmd;
+		irq=r->int_no;
+		cmd=0x60 | (irq & 7);
+		if(irq<8)
+			outportb(0x20,0x20);
+		else
+		{
+			outportb(0xA0,0x20);
+			outportb(0x20,0x20);
+		}
+	}
+			
 	/* Each of the IRQ ISRs point to this function, rather than
 	*  the 'fault_handler' in 'isrs.c'. The IRQ Controllers need
 	*  to be told when you are done servicing them, so you need
@@ -28,8 +42,9 @@ extern "C" {
 	*  an EOI command to the first controller. If you don't send
 	*  an EOI, you won't raise any more IRQs 
 	*/
-	void _irq_handler(IDT::regs *r)
+	void _irq_handler(void *sp)
 	{
+		IDT::regs *r=(IDT::regs *)sp;		
 		irqfunc_t my_handler;
 		
 		/* Find out if we have a custom handler to run for this
@@ -37,24 +52,14 @@ extern "C" {
 		my_handler = irq_routines[r->int_no - 32];
 		if (my_handler)
 		{
-			my_handler(r);
+			my_handler(sp);
 		}
 		else
 		{
-			cout<<"No handlers for IRQ "<< (int)r->int_no<< "installed\n";
+			cout<<"No handlers for IRQ "<< (int)r->int_no-32<< "installed\n";
 		}
-		/* If the IDT entry that was invoked was greater than 40
-		*  (meaning IRQ8 - 15), then we need to send an EOI to
-		*  the slave controller */
-		if (r->int_no >= 40)
-    		{
-        		outportb(0xA0, 0x20);
-    		}
-
-		/* In either case, we need to send an EOI to the master
-		*  interrupt controller too */
-		outportb(0x20, 0x20);
-		outportl(0x80,inportl(0x80)); //iodelay
+		end_irq(r);
+		//outportl(0x80,inportl(0x80)); //iodelay
 	}
 
 	/* These are own ISRs that point to our special IRQ handler
@@ -108,8 +113,9 @@ extern "C" {
 		outportb(0xA1, 0x02);
 		outportb(0x21, 0x01);
 		outportb(0xA1, 0x01);
-		outportb(0x21, 0x0);
-		outportb(0xA1, 0x0);
+		outportb(0x21, 0xFF);
+		outportb(0xA1, 0xFB);
+		IRQ_mask=0xFFFB;
 	}
 
 /* We first remap the interrupt controllers, and then we install
@@ -137,8 +143,8 @@ extern "C" {
 		IDT::set_gate(46, _irq14, 0x08, 0x8E);
     		IDT::set_gate(47, _irq15, 0x08, 0x8E);
 		cout<<"IRQ initialized\n";
-     		outportb(0x21, 0xFF);
-		outportb(0xA1, 0xFF);
+     		//outportb(0x21, 0xFF);
+		//outportb(0xA1, 0xFB);
 
 	}
 	void dump_irq_routines()
@@ -167,13 +173,17 @@ extern "C" {
 	// set IRQ mask 
 	void set_irq_mask(unsigned short mask)
 	{
+		unsigned short old_mask;
 		unsigned char cmask;
+		old_mask=get_irq_mask();
 		cmask=mask&0xff;
-		outportb(0x21,cmask); // mask master controller
+		if(cmask!=old_mask&0xff) 
+			outportb(0x21,cmask); // mask master controller
 		cmask=(mask>>8)&0xff;
-		outportb(0xA1,cmask); // mask slave controller
+		if(cmask!=(old_mask>>8)&0xff)
+			outportb(0xA1,cmask); // mask slave controller
 		IRQ_mask=mask;
-		outportl(0x80,inportl(0x80)); //iodelay
+		//outportl(0x80,inportl(0x80)); //iodelay
 	}
 	// enable a perticular IRQ
 	void enable_irq(int irq)

@@ -12,7 +12,7 @@
 #include "idt.h"
 
 namespace IRQ{ //IRQs are global
-	typedef void(*irqfunc_t)(IDT::regs *r);	
+	typedef void(*irqfunc_t)(void *sp);	
 	void setup();
 	void remap(void);
 	void dump_irq_routines(void);
@@ -22,6 +22,7 @@ namespace IRQ{ //IRQs are global
 	void set_irq_mask(unsigned short mask);
 	void enable_irq(int irq);
 	void disable_irq(int irq);
+	extern "C"{ void end_irq(IDT::regs *r);};
 }; //end namespace IRQ
 
 
