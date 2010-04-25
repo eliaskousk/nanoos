@@ -9,13 +9,14 @@
 #include "kheap.h"
 #include "OStream.h"
 #include "idt.h"
+#include "irq.h"
 #include "low-io.h"
 #include "task.h"
 #include "shell.h"
 #include "timer.h"
 using namespace IDT;
 using namespace String;
-
+using namespace IRQ;
 typedef void (*func)(void *earg);
 thread threads[32]; //we will have maximum 32 tasks running.		
 
@@ -23,6 +24,7 @@ static int current_task=-1;// no task is started.
 static int tid=1;  //tid=0 is for idle process
 // this function will create a task and add to the threads[]
 volatile int tasker=0;
+extern thread *g_current;
 void thread_stack_push(thread *t, unsigned int val)
 {
 	t->stack_top-=4;
@@ -30,6 +32,7 @@ void thread_stack_push(thread *t, unsigned int val)
 }
 void thread_run(func entry,void *args)
 {
+	cout<<"In thread_run\n";
 	enable();	
 	entry(args);
 	disable();
@@ -65,10 +68,10 @@ void create_thread(func entry,void *args)
 	threads[id].arg=args;
 	threads[id].id=tid;
 	++tid;
-
+	
 	thread_stack_push(&threads[id],(unsigned int)args);
 	//thread_stack_push(&threads[id],(unsigned int)entry);
-	thread_stack_push(&threads[id],0);
+	//thread_stack_push(&threads[id],0);
 	threads[id].stack_top-=sizeof(IDT::regs);
 	threads[id].r=(IDT::regs*)threads[id].stack_top;	
 	threads[id].r->gs = 0x10;
@@ -86,7 +89,7 @@ void create_thread(func entry,void *args)
 	threads[id].r->eip=(unsigned int)entry;
 	//threads[id].err_code=0x;
 	threads[id].r->cs=0x8;
-	threads[id].r->eflags=0x0202;
+	threads[id].r->eflags=0x0200;
 	threads[id].state=CREATED;	
 	enable();
 }
@@ -98,12 +101,12 @@ extern "C" {extern unsigned int read_eip();};
 //That way we can save it in our task structure
 extern "C" {
 
-void task_switch(IDT::regs *r)
+void task_switch(void *sp)
 {
 		
 	//unsigned long ebp,esp,sz;
 	//cout<<"task_switch\n";
-	
+	IDT::regs *r=(IDT::regs *)sp;
 	if(current_task != -1)
 	{ 
 		
@@ -114,6 +117,7 @@ void task_switch(IDT::regs *r)
 			++current_task;			
 		current_task%=32;
 		memcpy(r,threads[current_task].r,sizeof(IDT::regs));
+		end_irq(r);
 		enable();		
 	}
 	else
@@ -121,9 +125,11 @@ void task_switch(IDT::regs *r)
 		disable();		
 		current_task = 0; //We just started multi-tasking, start with task 0
 		memcpy(r,threads[current_task].r,sizeof(IDT::regs));
+		end_irq(r);		
 		enable();
 	}
 }
+
 } //extern C
 //TIMER *tm=TIMER::Instance();
 void idle(void *)

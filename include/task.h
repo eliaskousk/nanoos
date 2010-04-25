@@ -43,8 +43,9 @@ typedef void (*func)(void *earg);
 // this function will create a task and add to the threads[]
 //volatile int tasker=0;
 void create_thread(func entry,void *args);
-extern "C" {void task_switch(IDT::regs *r);}
+extern "C" {void task_switch(void *sp);}
 
+extern thread *g_current;
 void init_tasks();
 
 

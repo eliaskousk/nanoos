@@ -420,11 +420,13 @@ irq_common_stub:
     mov es, ax
     mov fs, ax
     mov gs, ax
-    mov eax, esp
-    push eax
-    mov eax, _irq_handler
-    call eax
-    pop eax
+    mov eax, esp  ; save esp in eax
+    push eax      ; push it on the stack so that we will get the whole stack
+                  ; inside the irq handler 
+    mov eax, _irq_handler ;; call the irq_handler C function 
+    call eax              ; the call will not change the eip
+    pop eax               ; here recall the esp as it was before the call
+                          ; irq_handler  
     pop gs
     pop fs
     pop es

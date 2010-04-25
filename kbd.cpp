@@ -103,7 +103,7 @@ unsigned short scan_key()
 
 	return( code );
 }
-void kbd_handler(IDT::regs *r)
+void kbd_handler(void *sp)
 {
 		
 	unsigned short scan_code;
