@@ -33,6 +33,7 @@ typedef struct thread
 	states state;
 	int retval;
 	unsigned int id;
+	//struct thread *next;
 }thread;
  
 typedef void (*func)(void *earg);
@@ -42,7 +43,7 @@ typedef void (*func)(void *earg);
 //static char tid=1;  //tid=0 is for idle process
 // this function will create a task and add to the threads[]
 //volatile int tasker=0;
-void create_thread(func entry,void *args);
+thread *create_thread(func entry,void *args);
 extern "C" {void task_switch(void *sp);}
 
 extern thread *g_current;

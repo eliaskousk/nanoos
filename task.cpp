@@ -14,12 +14,14 @@
 #include "task.h"
 #include "shell.h"
 #include "timer.h"
+#include "queue.h"
 using namespace IDT;
 using namespace String;
 using namespace IRQ;
 typedef void (*func)(void *earg);
-thread threads[32]; //we will have maximum 32 tasks running.		
-
+//thread threads[32]; //we will have maximum 32 tasks running.		
+que<thread> *task_q=new que<thread>();
+thread *curr;
 static int current_task=-1;// no task is started.
 static int tid=1;  //tid=0 is for idle process
 // this function will create a task and add to the threads[]
@@ -37,63 +39,53 @@ void thread_run(func entry,void *args)
 	entry(args);
 	disable();
 	cout<<"Exit!!!\n";
-	threads[current_task].state=FINISHED;
-	enable();
-}
-void create_thread(func entry,void *args)
-{
-	disable();
-	static unsigned int id=0;
-	if (tid>=32)
-	{
-		tid=0;
-		while(threads[tid].state!=FINISHED)
-			tid++;
-	}
-	if(tid>=32)
-	{
-		cout<<"No free slot: tid>=32 possible\n";
-		enable();
-		return;
-	}
-	id=tid;
-	threads[id].stack= new unsigned char[1024];
-	if(threads[id].stack==NULL)
-	{
-		cout<<"Can't allocate memory for stack\n";
-		enable();
-		return;
-	}
-	threads[id].stack_top=(unsigned int)threads[id].stack+1024;
-	threads[id].arg=args;
-	threads[id].id=tid;
-	++tid;
-	
-	thread_stack_push(&threads[id],(unsigned int)args);
-	//thread_stack_push(&threads[id],(unsigned int)entry);
-	//thread_stack_push(&threads[id],0);
-	threads[id].stack_top-=sizeof(IDT::regs);
-	threads[id].r=(IDT::regs*)threads[id].stack_top;	
-	threads[id].r->gs = 0x10;
-	threads[id].r->fs = 0x10;
-	threads[id].r->es = 0x10;
-	threads[id].r->ds = 0x10;
-	threads[id].r->edi=0;
-	threads[id].r->esi=0;
-	threads[id].r->ebp=0;
-	threads[id].r->esp=threads[id].stack_top;
-	threads[id].r->ebx=0;
-	threads[id].r->edx=0;
-	threads[id].r->ecx=0;
-	threads[id].r->eax=0;
-	threads[id].r->eip=(unsigned int)entry;
-	//threads[id].err_code=0x;
-	threads[id].r->cs=0x8;
-	threads[id].r->eflags=0x0200;
-	threads[id].state=CREATED;	
+	curr->state=FINISHED;
 	enable();
 }
 
+thread *create_thread(func entry,void *args)
+{
+	disable();
+	thread *t=new thread;
+	if(!t)
+	{
+		cout<<"Insufficient memory for Task creation\n";
+		enable();
+		return NULL;
+	}
+	t->stack=new unsigned char[1024];
+	if(t->stack==NULL)
+	{
+		cout<<"Insufficient memory for Task stack creation\n";
+		delete (t);
+		enable();
+		return NULL;
+	}
+	t->stack_top=(unsigned int)t->stack+1024;
+	t->arg=args;
+	thread_stack_push(t,(unsigned int)args);
+	t->stack_top-=sizeof(IDT::regs);
+	t->r=(IDT::regs *)t->stack_top;
+	t->r->gs = 0x10;
+	t->r->fs = 0x10;
+	t->r->es = 0x10;
+	t->r->ds = 0x10;
+	t->r->edi=0;
+	t->r->esi=0;
+	t->r->ebp=0;
+	t->r->esp=t->stack_top;
+	t->r->ebx=0;
+	t->r->edx=0;
+	t->r->ecx=0;
+	t->r->eax=0;
+	t->r->eip=(unsigned int)entry;
+	//tt->err_code=0x;
+	t->r->cs=0x8;
+	t->r->eflags=0x0200;
+	t->state=CREATED;	
+	enable();
+	return (t);
+}
 extern "C" {extern unsigned int read_eip();};			
 //Switch between our two tasks
 //Notice how we get the old esp from the ASM code
@@ -103,29 +95,25 @@ extern "C" {
 
 void task_switch(void *sp)
 {
-		
-	//unsigned long ebp,esp,sz;
-	//cout<<"task_switch\n";
-	IDT::regs *r=(IDT::regs *)sp;
-	if(current_task != -1)
-	{ 
-		
-		disable();
-		memcpy(threads[current_task].r,r,sizeof(IDT::regs));
-		++current_task;
-		while((threads[current_task].state==BLOCKED)||(threads[current_task].state==FINISHED))
-			++current_task;			
-		current_task%=32;
-		memcpy(r,threads[current_task].r,sizeof(IDT::regs));
-		end_irq(r);
-		enable();		
-	}
-	else
+	IDT::regs *r=(IDT::regs*)sp;
+	if(current_task==-1)
 	{
-		disable();		
-		current_task = 0; //We just started multi-tasking, start with task 0
-		memcpy(r,threads[current_task].r,sizeof(IDT::regs));
-		end_irq(r);		
+		disable();
+		thread *temp=task_q->get(); // get the task
+		current_task=0;
+		memcpy(r,temp->r,sizeof(IDT::regs)); // switch regs
+		task_q->put(temp); // put it back in q
+		curr=temp;
+		enable();
+	}
+	if(tasker)
+	{
+		thread *temp;
+		memcpy(curr->r,r,sizeof(IDT::regs)); // save the register in 
+                                                     // current task
+		task_q->put(curr);                   // put the task in q
+		curr=task_q->get();                  // get new task from q
+		memcpy(r,curr->r,sizeof(IDT::regs)); // change rge registers
 		enable();
 	}
 }
@@ -206,23 +194,14 @@ void thread5(void *)
 void init_tasks()
 {
 	cout<<"initializing Tasks\n";
-	for(int i=0;i<32;i++)
-	{
-		create_thread(idle,NULL);
-		threads[i].state=FINISHED;
-	}
-	threads[0].state=RUNNING;
-	create_thread(thread1,&current_task);
-	threads[1].state=RUNNING;
-	create_thread(thread2,&current_task);
-	threads[2].state=RUNNING;
-	create_thread(thread3,&current_task);
-	threads[3].state=RUNNING;
-	create_thread(thread4,&current_task);
-	threads[4].state=RUNNING;
-	//cout<<*((unsigned int*)&current_task)<<"\n";
-	//create_thread(thread5,NULL);
-	//threads[5].state=RUNNING;
+	// implement a locking mechanism while put() and get()
+	task_q->put(create_thread(idle,(unsigned int *)&tasker));
+	task_q->put(create_thread(thread1,(unsigned int *)&tasker));
+	task_q->put(create_thread(thread2,(unsigned int *)&tasker));
+	task_q->put(create_thread(thread3,(unsigned int *)&tasker));
+	task_q->put(create_thread(thread4,(unsigned int *)&tasker));
+	cout<<"Total "<<task_q->get_num_nodes()<<" tasks started\n";
+	
 	tasker=1;
 }
 
