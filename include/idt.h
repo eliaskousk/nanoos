@@ -28,7 +28,7 @@ namespace IDT{ //IDT is also global so there is no point for creating a class fo
 			unsigned long gs, fs, es, ds;
 			unsigned long edi, esi, ebp, esp, ebx, edx, ecx, eax;
 			unsigned long int_no, err_code;
-			unsigned long eip, cs, eflags, useresp, ss;	
+			unsigned long eip, cs, eflags;//, useresp, ss;	
 		} regs;
 	typedef void (*isrfunc_t)(regs *);
 

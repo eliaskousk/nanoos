@@ -76,11 +76,6 @@ int kmain(multibootInfo *mb)
 	cout<<"\n\n"<<"Enabling Interrupts\n";	
 	enable();
 	cout<<"done\n";
-	cout<<"Initializing tasking ";
-	init_tasks();
-	cout<<"done\n";
-	
-	
 	//init_disks();
 	//init_sys_drv();
 	//cout<<"Finished init_disks\n";
@@ -100,8 +95,10 @@ int kmain(multibootInfo *mb)
 	cout<<"\n"<<"Dumping IRQ routines \n";
 	IRQ::dump_irq_routines();
 	cout<<"\nDone\n";
-	
-	
+	cout<<"Initializing tasking ";
+	init_tasks();
+	cout<<"done\n";
+	for(;;);
 	cout<<"Press any key to start shell";
 	cin>>ans;
 	cout<<"\nStarting Shell\n";

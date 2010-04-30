@@ -40,12 +40,12 @@ video::~video() {}
 void video::clear()		//Sets all video memory to display ' ' (blank)
 {
 	unsigned int i;
-
+	disable();
 	for(i = 0; i < (scrWidth * scrHeight); i++)
 	{
 		videomem[i] = (unsigned char) ' ' | (colour << 8) ;
 	}
-
+	enable();
 	gotoxy(0, 0);
 }
 
@@ -57,6 +57,7 @@ void video::write(char *cp)		//Puts every char in a string onto the screen
 void video::putchar(char c)
 {
 	int t;
+	disable();
 	switch(c)
 	{
 	case '\r':                         //-> carriage return
@@ -104,6 +105,7 @@ void video::putchar(char c)
 	}
 									// and finally, set the cursor 
 	setcursor(xpos, ypos);
+	enable();
 }
 
 
@@ -111,20 +113,20 @@ void video::scrollup()		// scroll the screen up one line
 {
 	unsigned int t;
 
-	//disable();	//this memory operation should not be interrupted,
+	disable();	//this memory operation should not be interrupted,
 				//can cause errors (more of an annoyance than anything else)
 	for(t = 0; t < scrWidth * (scrHeight - 1); t++)		// scroll every line up 
 		*(videomem + t) = *(videomem + t + scrWidth);
 	for(; t < scrWidth * scrHeight; t++)				//clear the bottom line 
 		*(videomem + t) = ' ' | (colour << 8);
 
-	//enable();
+	enable();
 }
 
 void video::setcursor(unsigned x, unsigned y)	//Hardware move cursor
 {
     unsigned short offset;
-
+	
 	offset = x + y * scrWidth;      // 80 characters per line 
 	outportb(crtc_mem + 0, 14);     // MSB of offset to CRTC reg 14 
 	outportb(crtc_mem + 1, offset >> 8);

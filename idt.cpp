@@ -96,11 +96,11 @@ extern "C" {
 		cout<<"EIP= "<<r->eip<<" CS=  "<<r->cs<<"\n";
 		cout<<"DS=  "<< r->ds<<" ES=  "<<r->es<<"\n";
 		cout<<"FS=  "<< r->fs<<" GS=  "<<r->gs<<"\n";
-		cout<<"SS=  "<< r->ss<<"\n";
+		//cout<<"SS=  "<< r->ss<<"\n";
 		cout<<"Interrupt# = "<<r->int_no<<"\n";
 		cout<<"Err.Code= "<<r->err_code<<"\n";
 		cout<<"e-Flags= "<<r->eflags<<"\n";
-		cout<<"Usr.Esp= "<<r->useresp<<"\n";
+		//cout<<"Usr.Esp= "<<r->useresp<<"\n";
 		cout<<"============================================\n";
 		/*		
 		for(int i=0,j=0;i<64;i++,j++)
@@ -130,7 +130,7 @@ extern "C" {
         		 *  In this tutorial, we will simply halt the system using an
         		 *  infinite loop */
 			cout.SetBackColour(BLUE);
-			cout.clear();
+			//cout.clear();
 			dump_regs(r);
         		cout<<exception_messages[r->int_no];
 			cout<<" System Halted!\n";
