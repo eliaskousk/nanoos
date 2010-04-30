@@ -283,6 +283,9 @@ void kfree(void *p)
 	if(((unsigned char*)p< heap_bot)||((unsigned char *)p>heap_top))
 	{
 		cout<<"Illegal memory area\n";
+		cout.flags(hex|showbase);
+		cout<<(unsigned int)p<<"\n";
+		cout.flags(dec);
 		return;
 	}
 	//so p is within our limit

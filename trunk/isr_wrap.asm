@@ -58,6 +58,7 @@ global _irq14
 global _irq15   ;IRQ 15
 global read_eip		; I could not find a better place to put 
 				; this so put it here
+extern _irq_handler ; C code 
 segment .text
 
 ;  0: Divide By Zero Exception
@@ -298,7 +299,34 @@ _irq0:
     push byte 0    ; Note that these don't push an error code on the stack:
                    ; We need to push a dummy error code
     push byte 32
-    jmp irq_common_stub
+   ; jmp irq_common_stub
+    pusha
+    push ds
+    push es
+    push fs
+    push gs
+    mov ax, 0x10
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov eax, esp  ; save esp in eax
+    push eax      ; push it on the stack so that we will get the whole stack
+                  ; inside the irq handler 
+    mov eax, _irq_handler ;; call the irq_handler C function 
+    call eax              ; the call will not change the eip
+    pop eax               ; here recall the esp as it was before the call
+                          ; irq_handler  
+	push eax
+	call task_switch
+	mov esp,eax
+    pop gs
+    pop fs
+    pop es
+    pop ds
+    popa
+    add esp, 8
+    iret	
 ; 33: IRQ1
 _irq1:
     cli
@@ -405,7 +433,7 @@ _irq15:
     push byte 47
     jmp irq_common_stub
 
-extern _irq_handler ; C code  
+ 
 
 ; This is a stub that we have created for IRQ based ISRs. This calls
 ; '_irq_handler' in our C code. We need to create this in an 'irq.c'

@@ -71,7 +71,10 @@ template <class T> class que
 			}
 		};
 		
-				
+		void remove( T *x)
+		{
+			
+		}		
 		T *get()
 		{
 			node<T> *temp;

@@ -11,7 +11,7 @@
 #include "timer.h"
 #include "irq.h"
 TIMER *my_timer;
-extern "C"{ void task_switch(void *sp);}
+extern "C"{unsigned int task_switch(void *sp);}
 	/* to set timer frequency IRQ0 frequency */
 	void TIMER::timer_phase(int hz)
 	{
@@ -28,7 +28,7 @@ extern "C"{ void task_switch(void *sp);}
 	void TIMER::setup()
 	{
 		cout<<"Timer Initializing\n";    		
-		timer_phase(100);
+		timer_phase(1000);
 		cout<<"Installing handler \n"; 
 		IRQ::install_handler(0,TIMER::timer_handler);
 		IRQ::enable_irq(0);
@@ -49,14 +49,7 @@ extern "C"{ void task_switch(void *sp);}
 	}
 	
 	void TIMER::timer_handler(void *sp)	
-	{
-		extern volatile int tasker;		
+	{		
 		timer_ticks++;
-		if(timer_ticks%10==0){
-		if(tasker)
-		task_switch(sp);//tasks enabled ????
-		}
-		//outportb(0x20, 0x20);
-		//outportl(0x80,inportl(0x80));
 	}	
 
