@@ -4,7 +4,7 @@
 = Introduction =
 
 On the Net there are several OSdev articles. Just Google the right words/phrases you will get thousands of them. The Person I got inspiration is  *Alexei A. Frounze* As he has shown The way how to create a small OS using Turbo-C Well at least I was inspired by his Site.
-Next is *Bran's Kernel tutorial* Which I personally recommend and of-course the *James Molly's* roll your own stuff. Well I of-course can not forget the famous *GeekOs, chris and megatokyo* (now defunct????)
+Next is *Bran's Kernel tutorial* Which I personally recommend and of-course the *James Molloy's* roll your own stuff. Well I of-course can not forget the famous *GeekOs, chris and megatokyo* (now defunct????)
 
 = How It started =
 During 1997-98 I stummbled upon few Geeks locally Who are wasting there talents writing Nuisance. They were in need of a guy good in Assembly and C, so some mutual wise friend
