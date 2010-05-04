@@ -3,9 +3,17 @@
 = Introduction =
 
 On the Net there are several OSdev articles. Just Google the right words/phrases you will get thousands of them. The Person I got inspiration is  *Alexei A. Frounze* As he has shown The way how to create a small OS using Turbo-C Well at least I was inspired by his Site.
-Next is *Brian's Kernel tutorial* Which I personally recommend and of-course the *James Molly's* roll your own stuff....
- 
+Next is *Brian's Kernel tutorial* Which I personally recommend and of-course the *James Molly's* roll your own stuff. Well I of-course can not forget the famous *GeekOs, chris and megatokyo* (now defunct????)
 
+= How It started =
+During 1997-98 I stummbled upon few Geeks locally Who are wasting there talents writing Nuisance. They were in need of a guy good in Assembly and C, so some mutual wise friend
+recommend my name. Those guy's are pretty junior to me and aged between 18-20. They asked me to help them with fundamentals of Assembly language and how to interface with Highlevel languages like PASCAL and C. During those days I used _DOS debug.exe_ for writing small utilities and tools(Well it was tedious but interesting). Then I started to describe them The inline-assembly in Turbo-C and Turbo-Pascal( Yes Once Upon a time I was a Pascal Fan). The Interaction between me And That group went well for 1-year or so. After that I left my Native place and moved away.
+
+During those days I stumbled upon Alex's home page and soiled my hands with Protected mode. Then On to the OSDev. The OSDev Using Turbo-C. I modified bits and pices here and there crashed my system few times then I grabbed a copy of BOCHS a beautifull PC-Emulator which saved my PC from rebooting from Floppy disk to try out the modifications and there effects. After a few days I lost Interest in OSDev as my priority changed.
+Then comes a period of dark-age for 5-years. At that Time I was Working with WYSE Technology,India. There I had to work on eCos, an embedded OS for a small subsystem. The work involved Modifying several things inside the Kernel. That again kindle the flame in me. But I didn't start. Then I left WYSE and Joined Redhat,India. I Usually being asked about few curious things from Support guys regarding boot process, scheduling, drivers etc...
+One fine day I thought Why not write a small Kernel to demonstrate these features? 
+So I started One OS in C. Then I Decided to Write it in C++ as youngsters comming out of colleges are more aquanted with C++ and java than C. 
+I took one bare-bone for C++ from OSDEV.org and started populating it. I thought of a name for it as *nanos* stands for _Not An OS_
 
 = Details =
 
