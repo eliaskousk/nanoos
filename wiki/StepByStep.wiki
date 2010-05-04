@@ -13,7 +13,7 @@ During those days I stumbled upon Alex's home page and soiled my hands with Prot
 Then comes a period of dark-age for 5-years. At that Time I was Working with WYSE Technology,India. There I had to work on eCos, an embedded OS for a small subsystem. The work involved Modifying several things inside the Kernel. That again kindle the flame in me. But I didn't start. Then I left WYSE and Joined Redhat,India. I Usually being asked about few curious things from Support guys regarding boot process, scheduling, drivers etc...
 One fine day I thought Why not write a small Kernel to demonstrate these features? 
 So I started One OS in C. Then I Decided to Write it in C++ as youngsters comming out of colleges are more aquanted with C++ and java than C. 
-I took one bare-bone for C++ from OSDEV.org and started populating it. I thought of a name for it as *nanos* stands for _Not An OS_but There already was a project in the same name. so i changed the name to *nanoos* for _Nano OS_.
+I took one bare-bone for C++ from OSDEV.org and started populating it. I thought of a name for it as *nanos* stands for _Not An OS_ but There already was a project in the same name. so i changed the name to *nanoos* for _Nano OS_.
 
 
 = Details =
