@@ -1,0 +1,15 @@
+#On this page I will try to Put how I Started and How I approached.
+
+= Introduction =
+
+On the Net there are several OSdev articles. Just Google the right words/phrases you will get thousands of them. The Person I got inspiration is  *Alexei A. Frounze* As he has shown The way how to create a small OS using Turbo-C Well at least I was inspired by his Site.
+Next is *Brian's Kernel tutorial* Which I personally recommend and of-course the *James Molly's* roll your own stuff....
+ 
+
+
+= Details =
+
+Add your content here.  Format your content with:
+  * Text in *bold* or _italic_
+  * Headings, paragraphs, and lists
+  * Automatic links to other wiki pages
