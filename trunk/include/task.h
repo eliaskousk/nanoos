@@ -23,7 +23,7 @@ typedef enum states{
 		BLOCKED,
 		FINISHED,
 	}states;
-#define MAX_SLICE 200 // 200 ticks
+#define MAX_SLICE 20 // 20 ticks
 typedef struct thread
 {
 	unsigned int stack_top; 	

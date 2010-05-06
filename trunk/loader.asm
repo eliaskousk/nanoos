@@ -49,10 +49,10 @@ start:
     ; Load multiboot information:
     mov esp, stack
     mov ebp,esp
-    push esp
-    push ebx
-    push eax
-    push    ebx
+   ; push esp
+    push ebx  ;multiboot info
+    push eax ;multiboot magic
+   
 
     ; Execute the kernel:
     cli                         ; Disable interrupts.

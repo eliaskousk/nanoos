@@ -58,7 +58,7 @@ extern "C" {
 		{
 			cout<<"No handlers for IRQ "<< (int)r->int_no-32<< "installed\n";
 		}
-		end_irq(r);
+		//end_irq(r);
 		//outportl(0x80,inportl(0x80)); //iodelay
 	}
 
@@ -115,7 +115,7 @@ extern "C" {
 		outportb(0xA1, 0x01);
 		outportb(0x21, 0xFF);
 		outportb(0xA1, 0xFB);
-		IRQ_mask=0xFFFB;
+		IRQ_mask=0xFFFF;
 	}
 
 /* We first remap the interrupt controllers, and then we install
@@ -177,10 +177,10 @@ extern "C" {
 		unsigned char cmask;
 		old_mask=get_irq_mask();
 		cmask=mask&0xff;
-		if(cmask!=old_mask&0xff) 
+		if(cmask!=(old_mask&0xff)) 
 			outportb(0x21,cmask); // mask master controller
 		cmask=(mask>>8)&0xff;
-		if(cmask!=(old_mask>>8)&0xff)
+		if(cmask!=((old_mask>>8)&0xff))
 			outportb(0xA1,cmask); // mask slave controller
 		IRQ_mask=mask;
 		//outportl(0x80,inportl(0x80)); //iodelay

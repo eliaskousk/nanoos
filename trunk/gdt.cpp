@@ -25,17 +25,18 @@ namespace GDT{
 		item->attribs = attribs | ((limit >> 16) & 0x0F);
 		item->access = access;
 	}
-	void lgdt(GDTR *mgdtr)
+	void load_gdt(GDTR *mgdtr)
 	{
 		__asm__ __volatile__ ("lgdt (%0)"::"p"(mgdtr));
-		__asm__ __volatile__("ljmp $8, $__flush\n"
-        	  "__flush:");
+		
 		__asm__ __volatile__("movl $0x10, %eax\n"
         	  "movw %ax, %ss\n"
         	  "movw %ax, %ds\n"
         	  "movw %ax, %es\n"
         	  "movw %ax, %fs\n"
         	  "movw %ax, %gs");
+		__asm__ __volatile__("ljmp $8, $__flush\n"
+        	  "__flush:");
 	}	
 	void setup()
 	{
@@ -49,7 +50,7 @@ namespace GDT{
 		gdtr.base=(unsigned long) &gdt;
 		gdtr.limit=(sizeof(DESCR_SEG) * 3) - 1;
 		/* GDT loaded*/
-        	lgdt(&gdtr);
+        	load_gdt(&gdtr);
 		cout<<"\tGDT Loaded\n";
 	}
 };
