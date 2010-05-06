@@ -8,6 +8,7 @@
 ;Stolen from Bran's tutorial
 ; we will add our Interrupt
 ; Service Routines (ISRs) right here!
+segment .text
 global _isr0
 global _isr1
 global _isr2
@@ -59,7 +60,7 @@ global _irq15   ;IRQ 15
 global read_eip		; I could not find a better place to put 
 				; this so put it here
 extern _irq_handler ; C code 
-segment .text
+
 
 ;  0: Divide By Zero Exception
 _isr0:
@@ -294,6 +295,7 @@ _isr31:
 ;============================IRQs====================
 ; 32: IRQ0
 extern task_switch
+extern end_irq
 _irq0:
     cli
     push byte 0    ; Note that these don't push an error code on the stack:
@@ -319,13 +321,16 @@ _irq0:
                           ; irq_handler  
 	push eax
 	call task_switch
-	mov esp,eax
+	push eax
+	call end_irq
+	pop esp
     pop gs
     pop fs
     pop es
     pop ds
     popa
     add esp, 8
+	sti
     iret	
 ; 33: IRQ1
 _irq1:

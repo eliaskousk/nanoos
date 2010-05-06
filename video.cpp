@@ -40,12 +40,10 @@ video::~video() {}
 void video::clear()		//Sets all video memory to display ' ' (blank)
 {
 	unsigned int i;
-	disable();
 	for(i = 0; i < (scrWidth * scrHeight); i++)
 	{
 		videomem[i] = (unsigned char) ' ' | (colour << 8) ;
 	}
-	enable();
 	gotoxy(0, 0);
 }
 
@@ -57,7 +55,6 @@ void video::write(char *cp)		//Puts every char in a string onto the screen
 void video::putchar(char c)
 {
 	int t;
-	disable();
 	switch(c)
 	{
 	case '\r':                         //-> carriage return
@@ -105,7 +102,6 @@ void video::putchar(char c)
 	}
 									// and finally, set the cursor 
 	setcursor(xpos, ypos);
-	enable();
 }
 
 

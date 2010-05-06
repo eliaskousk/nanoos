@@ -60,21 +60,24 @@ inline static void outsw(short port, unsigned short *data, unsigned count)
 		data++;
 	}
 }
+inline static void iodelay(){ outportl(0x80,inportl(0x80));}
 static volatile unsigned char enabled=0;
-inline static void enable()
+inline static void  __attribute__((nacked)) enable()
 {
 	if(!enabled){
 	__asm__ __volatile__ ("sti": : );
 	enabled=1;
 	}
+	iodelay();
 }
 
-inline static void disable()
+inline static void __attribute__((nacked)) disable() 
 {
 	if(enabled){
 	__asm__ __volatile__ ("cli" : :	);
 	enabled=0;
 	}
+	iodelay();
 }
 
 inline static void halt()

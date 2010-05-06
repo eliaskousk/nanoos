@@ -20,13 +20,13 @@ using namespace String;
 using namespace IRQ;
 typedef void (*func)(unsigned int earg);
 //thread threads[32]; //we will have maximum 32 tasks running.		
-que<thread> *task_q=new que<thread>();
+que<thread> *task_q;//=new que<thread>();
 thread *curr;
 static int current_task=-1;// no task is started.
 //static int tid=1;  //tid=0 is for idle process
 // this function will create a task and add to the threads[]
 volatile int tasker=0;
-extern thread *g_current;
+//extern thread *g_current;
 void thread_stack_push(thread *t, unsigned int val)
 {
 	t->stack_top-=4;
@@ -34,14 +34,14 @@ void thread_stack_push(thread *t, unsigned int val)
 }
 static void thread_catcher()
 {
-	disable();
+	//disable();
 	cout.gotoxy(70,24);
 	cout<<" thread "<<curr->id<<" exiting";
 	curr->state=FINISHED;
 	curr->timeslice=MAX_SLICE;
-	task_q->remove(curr);
-	curr=task_q->get();
-	enable();
+	//task_q->remove(curr);
+	//curr=task_q->get();
+	//enable();
 	for(;;);
 }
 void thread_run(func entry,unsigned int args)
@@ -59,12 +59,12 @@ static unsigned int new_tid()
 }
 thread *create_thread(func entry,unsigned int args)
 {
-	disable();
+	//disable();
 	thread *t=new thread;
 	if(!t)
 	{
 		cout<<"Insufficient memory for Task creation\n";
-		enable();
+		//enable();
 		return NULL;
 	}
 	t->stack=new unsigned char[1024];
@@ -72,7 +72,7 @@ thread *create_thread(func entry,unsigned int args)
 	{
 		cout<<"Insufficient memory for Task stack creation\n";
 		delete (t);
-		enable();
+		//enable();
 		return NULL;
 	}
 	t->stack_top=(unsigned int)t->stack+1024;
@@ -101,7 +101,7 @@ thread *create_thread(func entry,unsigned int args)
 	t->r->cs=0x8;
 	t->r->eflags=0x0200;
 	t->state=CREATED;	
-	enable();
+	//enable();
 	return (t);
 }
 extern "C" {extern unsigned int read_eip();};			
@@ -113,43 +113,33 @@ extern "C" {
 
 unsigned int task_switch(void *sp)
 {
-	IDT::regs *r=(IDT::regs*)sp;
-	if(tasker)
+	//IDT::regs *r=(IDT::regs*)sp;
+	if(!tasker)
+		return(unsigned int)sp;
+	else
 	{
+		//we have a task_q and ...
 		if(current_task==-1)
 		{
-			disable();
-			thread *temp=task_q->get(); // get the task
+			curr=task_q->get();
 			current_task=0;
-		
-			task_q->put(temp); // put it back in q
-			curr=temp;
-			enable();
+			return(curr->stack_top);
 		}
 		else
-		{		
-			thread *temp;
-			if((curr->timeslice>MAX_SLICE) || curr->state==FINISHED || curr->state==BLOCKED)
-			{
-				disable();
-				curr->stack_top=(unsigned int)sp; // save the stack in
-                                                     // current task
-				task_q->put(curr);   // put the task in q
-				curr=task_q->get();  // get new task from q
-				curr->timeslice=0;
-				enable();
-			}
-			else
+		{
+			if(curr->timeslice<MAX_SLICE)
 			{
 				curr->timeslice++;
 				return ((unsigned int)sp);
 			}
+			curr->stack_top=(unsigned int) sp;
+			task_q->put(curr);
+			curr=task_q->get();
+			curr->timeslice=0;
+			return (curr->stack_top);
 		}
-		return (curr->stack_top);
-	}		
-	else
-		return ((unsigned int)sp);
-}
+	}
+}		
 
 } //extern C
 //TIMER *tm=TIMER::Instance();
@@ -165,14 +155,14 @@ void thread1(unsigned int n)
 	int x,y;
 	for(;;)
 	{	
-		//disable();
+		disable();
 		x=cout.GetX();
 		y=cout.GetY();		
 		cout.gotoxy(70,5);
 		cout<<"\\\n"<<"   "<<*(int *)n<<"   \n";
 		
 		cout.gotoxy(x,y);
-		//enable();
+		enable();
 		//tm->sleep(10);
 	}
 }
@@ -181,13 +171,13 @@ void thread2(unsigned int n)
 	int x,y;	
 	for(;;)
 	{
-		//disable();
+		disable();
 		x=cout.GetX();
 		y=cout.GetY();		
 		cout.gotoxy(70,5);
 		cout<<"|\n"<<"   "<<*(int *)n<<"   \n";
 		cout.gotoxy(x,y);
-		//enable();
+		enable();
 		//tm->sleep(10);
 	}
 }
@@ -196,13 +186,13 @@ void thread3(unsigned int n)
 	int x,y;	
 	for(;;)
 	{
-		//disable();
+		disable();
 		x=cout.GetX();
 		y=cout.GetY();
 		cout.gotoxy(70,5);
 		cout<<"/\n"<<"   "<<*(int *)n<<"   \n";
 		cout.gotoxy(x,y);
-		//enable();
+		enable();
 		//tm->sleep(10);
 	}
 }
@@ -211,13 +201,13 @@ void thread4(unsigned int n)
 	int x,y;	
 	//for(;;)
 	{
-		//disable();
+		disable();
 		x=cout.GetX();
 		y=cout.GetY();		
 		cout.gotoxy(70,5);
 		cout<<"-\n"<<"   "<<*(int *)n<<"   \n";
 		cout.gotoxy(x,y);
-		//enable();
+		enable();
 		//tm->sleep(10);
 	}
 }
@@ -230,6 +220,8 @@ void init_tasks()
 {
 	cout<<"initializing Tasks\n";
 	// implement a locking mechanism while put() and get()
+	//asm __volatile__("cli");
+	task_q=new que<thread>();
 	task_q->put(create_thread(idle,0));
 	task_q->put(create_thread(thread1,(unsigned int )&b));
 	task_q->put(create_thread(thread2,(unsigned int )&c));
@@ -237,6 +229,7 @@ void init_tasks()
 	task_q->put(create_thread(thread4,(unsigned int )&a));
 	cout<<"Total "<<task_q->get_num_nodes()<<" tasks started\n";
 	tasker=1;
+	//asm __volatile__("sti");
 }
 
 

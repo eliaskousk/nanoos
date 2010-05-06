@@ -24,24 +24,26 @@
 #include "ide.h"
 #include "drive.h"
 #include "task.h"
-extern "C" int kmain(multibootInfo *mb);
+extern "C" int kmain(unsigned int magic, multibootInfo *mb);
 //extern struct multibootHeader mboot; //this comes from the loader.asm 
 extern void init_tasks();
 unsigned int memend; 
 unsigned int kend;
 char boot_dev[4];
-extern thread threads[32];
-int kmain(multibootInfo *mb)
+//extern thread threads[32];
+int kmain(unsigned int magic,multibootInfo *mb)
 {
+	construct(); //construct the global objects	
 	char ans;
-	construct();	
+		
 	memend=mb->memoryUpper*1024+0x100000; //memory end upper memory in bytes +1MB
 	kend=mboot.kernel_end;	
 	multiboot *m_boot;
 	
 	cout<<"Nano OS is booting\n";
-	String::strcpy(boot_dev,(const char *)mb->bootDevice);	
+	//String::strcpy(boot_dev,(const char *)mb->bootDevice);	
 	init_heap();
+	
 	cout<<"Setting up GDT ";
 	GDT::setup();
 	cout<<"done\n";
@@ -74,7 +76,7 @@ int kmain(multibootInfo *mb)
 	cout<<"Mboot at "<<(unsigned int)m_boot<<"\n";
 	dump_heap();
 	cout<<"\n\n"<<"Enabling Interrupts\n";	
-	enable();
+	//enable();
 	cout<<"done\n";
 	//init_disks();
 	//init_sys_drv();
