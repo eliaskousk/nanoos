@@ -23,7 +23,14 @@ typedef enum states{
 		BLOCKED,
 		FINISHED,
 	}states;
-#define MAX_SLICE 20 // 20 ticks
+typedef enum priority{
+		HIGH_PRIO=1,
+		NORM_PRIO=2,
+		LOW_PRIO=4,
+		IDLE_PRIO=100,
+}PRIO;
+#define MAX_SLICE 200 // 200 ticks 200 milisecs perhaps... 
+                      // as weare generating 1000 pulses
 typedef struct thread
 {
 	unsigned int stack_top; 	
@@ -31,6 +38,8 @@ typedef struct thread
 	IDT::regs *r;
 	void *arg;
 	unsigned int timeslice;
+	PRIO p;
+	unsigned int max_ticks;
 	states state;
 	int retval;
 	unsigned int id;
@@ -44,7 +53,7 @@ typedef void (*func)(unsigned int earg);
 //static char tid=1;  //tid=0 is for idle process
 // this function will create a task and add to the threads[]
 //volatile int tasker=0;
-thread *create_thread(func entry,unsigned int args);
+thread *create_thread(func entry,unsigned int args,PRIO p);
 extern "C" {unsigned int task_switch(void *sp);}
 extern thread *g_current;
 void init_tasks();

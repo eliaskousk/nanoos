@@ -19,6 +19,7 @@ namespace IRQ{ //IRQs are global
 	void install_handler(int irq, irqfunc_t my_handler);
 	void uninstall_handler(int irq);
 	unsigned short get_irq_mask();
+	unsigned short get_irq_mask_low();
 	void set_irq_mask(unsigned short mask);
 	void enable_irq(int irq);
 	void disable_irq(int irq);

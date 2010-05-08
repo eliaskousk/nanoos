@@ -321,9 +321,7 @@ _irq0:
                           ; irq_handler  
 	push eax
 	call task_switch
-	push eax
-	call end_irq
-	pop esp
+	mov esp,eax
     pop gs
     pop fs
     pop es

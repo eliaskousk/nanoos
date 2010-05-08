@@ -68,7 +68,7 @@ inline static void  __attribute__((nacked)) enable()
 	__asm__ __volatile__ ("sti": : );
 	enabled=1;
 	}
-	iodelay();
+	//iodelay();
 }
 
 inline static void __attribute__((nacked)) disable() 
@@ -77,7 +77,7 @@ inline static void __attribute__((nacked)) disable()
 	__asm__ __volatile__ ("cli" : :	);
 	enabled=0;
 	}
-	iodelay();
+	//iodelay();
 }
 
 inline static void halt()

@@ -173,7 +173,7 @@ char getch()
 	int i = 0;
 	while(buffend == 0);
 
-	//disable();		//Disable interrupts while we modify the buffer
+	disable();		//Disable interrupts while we modify the buffer
 
 	for(; i < buffend; i++)
 	{
@@ -181,7 +181,7 @@ char getch()
 	}
 	buffend--;
 
-	//enable();
+	enable();
 
 	return kbd_buffer[0];
 }
