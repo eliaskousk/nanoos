@@ -1,4 +1,4 @@
-#labels Featured,Phase-Requirements,Phase-Implementation
+#labels Featured,Phase-Requirements,Phase-Implementation,multitasking,taskswitching,stackswitch
 #On this page I will try to Put how I Started and How I approached.
 
 = Introduction =
@@ -70,8 +70,8 @@ See timer.cpp for more info.
 
 == tasking ==
 *Nanoos* has very primitive multi taskig support. this is acchieved by *CPU context switching*.
-basically whe ever a timer interrupt is generated we save the _cpu register_ and load next process's register values to the CPU.
-
+basically whenever a timer interrupt is generated we save the _cpu register_ and load next process's register values to the CPU.
+UPDATE: We are now switching stack to achieve multi tasking. See the ISR_wrap.asm, task.cpp for more details. The create_thread() function is similar to geekos. but the task switching is not. To make things simple we just return the stack_top of the task, and store it to esp in isr_wrap.asm. then the irq0 routine restores the coresponding registers. so our new task is now executing. 
 
 == driver ==
 to be done
