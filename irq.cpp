@@ -30,7 +30,13 @@ extern "C" {
 			outportb(0x20,0x20);
 		}
 	}
-			
+	bool is_spurious7()
+	{
+		outportb(0x20,0x0B);
+		if(inportb(0x20)&0x80)
+			return true;
+		return false;
+	}	
 	/* Each of the IRQ ISRs point to this function, rather than
 	*  the 'fault_handler' in 'isrs.c'. The IRQ Controllers need
 	*  to be told when you are done servicing them, so you need
@@ -58,7 +64,7 @@ extern "C" {
 		{
 			cout<<"No handlers for IRQ "<< (int)r->int_no-32<< "installed\n";
 		}
-		//end_irq(r);
+		end_irq(r);
 		//outportl(0x80,inportl(0x80)); //iodelay
 	}
 
@@ -114,10 +120,14 @@ extern "C" {
 		outportb(0x21, 0x01);
 		outportb(0xA1, 0x01);
 		outportb(0x21, 0xFF);
-		outportb(0xA1, 0xFB);
+		outportb(0xA1, 0xFF);
 		IRQ_mask=0xFFFF;
 	}
-
+	void spurious_irq7(void *sp)
+	{
+		//////do nothing
+		//asm("iret");
+	}
 /* We first remap the interrupt controllers, and then we install
 *  the appropriate ISRs to the correct entries in the IDT. This
 *  is just like installing the exception handlers */
@@ -143,6 +153,7 @@ extern "C" {
 		IDT::set_gate(46, _irq14, 0x08, 0x8E);
     		IDT::set_gate(47, _irq15, 0x08, 0x8E);
 		cout<<"IRQ initialized\n";
+		install_handler(7,spurious_irq7);
      		//outportb(0x21, 0xFF);
 		//outportb(0xA1, 0xFB);
 
@@ -169,6 +180,14 @@ extern "C" {
 	unsigned short get_irq_mask()
 	{
 		return IRQ_mask;
+	}
+	unsigned short get_irq_mask_low()
+	{
+		unsigned short msk;
+		msk=inportb(0xA1);
+		msk=msk<<8;
+		msk+=inportb(0x21);
+		return msk;
 	}
 	// set IRQ mask 
 	void set_irq_mask(unsigned short mask)

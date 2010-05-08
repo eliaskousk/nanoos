@@ -5,9 +5,11 @@
 // TASK Implementation                                  //
 // Taken from                                           //
 // http://hosted.cjmovie.net/TutMultitask.htm           //
+// geekOs thread creation mechanism but not taskswitch  //
 //////////////////////////////////////////////////////////
 #include "kheap.h"
 #include "OStream.h"
+#include "IStream.h"
 #include "idt.h"
 #include "irq.h"
 #include "low-io.h"
@@ -34,15 +36,17 @@ void thread_stack_push(thread *t, unsigned int val)
 }
 static void thread_catcher()
 {
-	//disable();
+	disable();
 	cout.gotoxy(70,24);
 	cout<<" thread "<<curr->id<<" exiting";
 	curr->state=FINISHED;
 	curr->timeslice=MAX_SLICE;
 	//task_q->remove(curr);
 	//curr=task_q->get();
-	//enable();
+	enable();
 	for(;;);
+	//task_switch((void*)curr->stack_top);
+	//enable();
 }
 void thread_run(func entry,unsigned int args)
 {
@@ -57,7 +61,7 @@ static unsigned int new_tid()
 	tid++;
 	return tid;
 }
-thread *create_thread(func entry,unsigned int args)
+thread *create_thread(func entry,unsigned int args,PRIO p)
 {
 	//disable();
 	thread *t=new thread;
@@ -79,6 +83,8 @@ thread *create_thread(func entry,unsigned int args)
 	t->arg=(void *)args;
 	t->id=new_tid();
 	t->timeslice=0;
+	t->p=p;
+	t->max_ticks=MAX_SLICE/p;
 	thread_stack_push(t,args);
 	thread_stack_push(t,(unsigned int)entry);
 	thread_stack_push(t,(unsigned int)0);
@@ -127,7 +133,18 @@ unsigned int task_switch(void *sp)
 		}
 		else
 		{
-			if(curr->timeslice<MAX_SLICE)
+			if(curr->state==FINISHED)
+			{
+				disable();
+				task_q->remove(curr);
+				curr=task_q->get();
+				enable();
+			}
+			if((curr->state==BLOCKED) || (curr->state==WAITING))
+			{
+				curr=task_q->get();
+			}
+			if(curr->timeslice<curr->max_ticks)
 			{
 				curr->timeslice++;
 				return ((unsigned int)sp);
@@ -155,14 +172,14 @@ void thread1(unsigned int n)
 	int x,y;
 	for(;;)
 	{	
-		disable();
+		//disable();
 		x=cout.GetX();
 		y=cout.GetY();		
 		cout.gotoxy(70,5);
 		cout<<"\\\n"<<"   "<<*(int *)n<<"   \n";
 		
 		cout.gotoxy(x,y);
-		enable();
+		//enable();
 		//tm->sleep(10);
 	}
 }
@@ -171,13 +188,13 @@ void thread2(unsigned int n)
 	int x,y;	
 	for(;;)
 	{
-		disable();
+		//disable();
 		x=cout.GetX();
 		y=cout.GetY();		
 		cout.gotoxy(70,5);
 		cout<<"|\n"<<"   "<<*(int *)n<<"   \n";
 		cout.gotoxy(x,y);
-		enable();
+		//enable();
 		//tm->sleep(10);
 	}
 }
@@ -186,28 +203,31 @@ void thread3(unsigned int n)
 	int x,y;	
 	for(;;)
 	{
-		disable();
+		//disable();
 		x=cout.GetX();
 		y=cout.GetY();
 		cout.gotoxy(70,5);
 		cout<<"/\n"<<"   "<<*(int *)n<<"   \n";
 		cout.gotoxy(x,y);
-		enable();
+		//enable();
 		//tm->sleep(10);
 	}
 }
 void thread4(unsigned int n)
 {
-	int x,y;	
+	int x,y;
+	char z;	
 	//for(;;)
 	{
-		disable();
+		//disable();
 		x=cout.GetX();
 		y=cout.GetY();		
 		cout.gotoxy(70,5);
 		cout<<"-\n"<<"   "<<*(int *)n<<"   \n";
 		cout.gotoxy(x,y);
-		enable();
+		//enable();
+		cin>>z;
+		cout<<"z="<<z<<"\n";
 		//tm->sleep(10);
 	}
 }
@@ -222,13 +242,17 @@ void init_tasks()
 	// implement a locking mechanism while put() and get()
 	//asm __volatile__("cli");
 	task_q=new que<thread>();
-	task_q->put(create_thread(idle,0));
-	task_q->put(create_thread(thread1,(unsigned int )&b));
-	task_q->put(create_thread(thread2,(unsigned int )&c));
-	task_q->put(create_thread(thread3,(unsigned int )&d));
-	task_q->put(create_thread(thread4,(unsigned int )&a));
-	cout<<"Total "<<task_q->get_num_nodes()<<" tasks started\n";
+	task_q->put(create_thread(idle,0,IDLE_PRIO));
+	//task_q->put(create_thread(thread1,(unsigned int )&b,LOW_PRIO));
+	//task_q->put(create_thread(thread2,(unsigned int )&c,LOW_PRIO));
+	//task_q->put(create_thread(thread3,(unsigned int )&d,LOW_PRIO));
+	//task_q->put(create_thread(thread4,(unsigned int )&a,LOW_PRIO));
+	task_q->put(create_thread(thread5,0,HIGH_PRIO)); //our shell
+	//cout<<"Total "<<task_q->get_num_nodes()<<" tasks started\n";
+	//cout<<"IRQ mask="<<IRQ::get_irq_mask()<<"\n";
+	//cout<<"IRQ mask 8259="<<IRQ::get_irq_mask_low()<<"\n";
 	tasker=1;
+	//IRQ::enable_irq(1);
 	//asm __volatile__("sti");
 }
 
