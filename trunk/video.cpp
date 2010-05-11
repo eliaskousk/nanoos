@@ -40,13 +40,13 @@ video::~video() {}
 void video::clear()		//Sets all video memory to display ' ' (blank)
 {
 	unsigned int i;
-	vmt.try_lock();
+	//vmt.try_lock();
 	for(i = 0; i < (scrWidth * scrHeight); i++)
 	{
 		videomem[i] = (unsigned char) ' ' | (colour << 8) ;
 	}
+	//vmt.unlock();
 	gotoxy(0, 0);
-	vmt.unlock();
 }
 
 void video::write(char *cp)		//Puts every char in a string onto the screen
@@ -57,7 +57,7 @@ void video::write(char *cp)		//Puts every char in a string onto the screen
 void video::putchar(char c)
 {
 	int t;
-	vmt.try_lock();
+	//vmt.try_lock();
 	switch(c)
 	{
 	case '\r':                         //-> carriage return
@@ -97,41 +97,44 @@ void video::putchar(char c)
 		}
 		break;
 	}
-
+	//vmt.unlock();
 	if(ypos == scrHeight)			// the cursor moved off of the screen? 
 	{
 		scrollup();					// scroll the screen up 
 		ypos--;						// and move the cursor back 
 	}
 									// and finally, set the cursor 
+		
 	setcursor(xpos, ypos);
-	vmt.unlock();
+	
 }
 
 
 void video::scrollup()		// scroll the screen up one line 
 {
 	unsigned int t;
-
-	disable();	//this memory operation should not be interrupted,
+	vmt.try_lock();
+	//disable();	//this memory operation should not be interrupted,
 				//can cause errors (more of an annoyance than anything else)
 	for(t = 0; t < scrWidth * (scrHeight - 1); t++)		// scroll every line up 
 		*(videomem + t) = *(videomem + t + scrWidth);
 	for(; t < scrWidth * scrHeight; t++)				//clear the bottom line 
 		*(videomem + t) = ' ' | (colour << 8);
 
-	enable();
+	//enable();
+	vmt.unlock();
 }
 
 void video::setcursor(unsigned x, unsigned y)	//Hardware move cursor
 {
     unsigned short offset;
-	
+	//vmt.try_lock();
 	offset = x + y * scrWidth;      // 80 characters per line 
 	outportb(crtc_mem + 0, 14);     // MSB of offset to CRTC reg 14 
 	outportb(crtc_mem + 1, offset >> 8);
 	outportb(crtc_mem + 0, 15);     // LSB of offset to CRTC reg 15 
 	outportb(crtc_mem + 1, offset);
+	//vmt.unlock();
 }
 
 void video::gotoxy(unsigned x, unsigned y)		//Software move cursor

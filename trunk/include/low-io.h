@@ -62,7 +62,7 @@ inline static void outsw(short port, unsigned short *data, unsigned count)
 }
 inline static void iodelay(){ outportl(0x80,inportl(0x80));}
 static volatile unsigned char enabled=0;
-inline static void  __attribute__((nacked)) enable()
+inline static void enable()
 {
 	if(!enabled){
 	__asm__ __volatile__ ("sti": : );
@@ -71,7 +71,7 @@ inline static void  __attribute__((nacked)) enable()
 	//iodelay();
 }
 
-inline static void __attribute__((nacked)) disable() 
+inline static void disable() 
 {
 	if(enabled){
 	__asm__ __volatile__ ("cli" : :	);

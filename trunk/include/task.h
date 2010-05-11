@@ -11,7 +11,7 @@
 
 #include "idt.h"
 #include "low-io.h"
-
+#include "string.h"
 using namespace IDT;
 using namespace String;
 typedef enum states{

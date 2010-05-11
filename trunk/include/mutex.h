@@ -1,10 +1,9 @@
 //mutex
 #ifndef __MUTEX_H__
 #define __MUTEX_H__
-#include "task.h"
+
 typedef volatile unsigned int lock_t;
 
-using namespace std;
 class mutex
 {
 	private: 
