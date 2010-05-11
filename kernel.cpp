@@ -76,7 +76,7 @@ int kmain(unsigned int magic,multibootInfo *mb)
 	cout<<"Mboot at "<<(unsigned int)m_boot<<"\n";
 	dump_heap();
 	cout<<"\n\n"<<"Enabling Interrupts\n";	
-	//enable();
+	enable();
 	cout<<"done\n";
 	//init_disks();
 	//init_sys_drv();
