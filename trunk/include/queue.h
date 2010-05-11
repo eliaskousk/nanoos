@@ -17,9 +17,12 @@ template <class T> class que
 	private:
 		node<T> *head,*tail;
 		unsigned int num_nodes;
-		mutex *q_m;
+		mutex *q_mt;
 	public:
-		que() :head(NULL), tail(NULL), num_nodes(0){q_m=new mutex(); };
+		que() :head(NULL), tail(NULL), num_nodes(0)
+		{
+			q_mt=new mutex(); 
+		};
 
 		bool is_empty()
 		{ 
@@ -34,7 +37,7 @@ template <class T> class que
 		};
 		void put(T *dat)
 		{
-			//q_m->try_lock();
+			q_mt->try_lock();
 			node<T> *temp=new node<T>;
 			temp->data=dat;
 			temp->next=NULL;
@@ -49,12 +52,12 @@ template <class T> class que
 				tail=temp;
 			}
 			num_nodes++;
-			//while(q_m->unlock());
+			q_mt->unlock();
 		};
 		void remove(node<T> *n)
 		{
+			q_mt->try_lock();
 			node<T> *temp;
-			//q_m->try_lock();
 			if (n==head)
 			{
 				temp=head;
@@ -75,13 +78,13 @@ template <class T> class que
 				delete (temp1);
 				num_nodes--;
 			}
-			//while(q_m->unlock());
+			q_mt->unlock();
 		};
 		
 		void remove( T *x)
 		{
+			q_mt->try_lock();
 			node<T> *temp1,*temp2;
-			//q_m->try_lock();
 			temp1=head;
 			if(temp1->data==x)
 			{
@@ -101,20 +104,20 @@ template <class T> class que
 					}
 				}
 			}
-			//while(q_m->unlock());
+			q_mt->unlock();
 		};
 				
 		T *get()
 		{
+			q_mt->try_lock();
 			node<T> *temp;
 			T *dat;
-			//q_m->try_lock();
 			temp=head;
 			head=head->next;
 			dat=temp->data;
 			delete(temp);
 			num_nodes--;
-			//while(q_m->unlock());
+			q_mt->unlock();
 			return (dat);
 		};
 			

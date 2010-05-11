@@ -41,13 +41,14 @@ g++  -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs 
 g++  -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -fno-rtti -fno-exceptions -c -g fatfs.cpp
 g++  -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -fno-rtti -fno-exceptions -c -g pci.cpp
 g++  -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -fno-rtti -fno-exceptions -c -g task.cpp
-
+g++  -I./include -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -fno-rtti -fno-exceptions -c -g mutex.cpp
 echo 
 msg "Assembling asm files using nasm "
 echo
-nasm -f elf loader.asm -o loader.o
-nasm -f elf isr_wrap.asm -o isr_wrap.o
-nasm -f elf gcpun.asm -o gcpun.o
+nasm -g -f elf loader.asm -o loader.o
+nasm -g -f elf isr_wrap.asm -o isr_wrap.o
+nasm -g -f elf gcpun.asm -o gcpun.o
+nasm -g -f elf lock.asm -o lock.o
 msg "removing old kernel"
 rm -f ./bin/nanos.elf
 echo
@@ -56,7 +57,7 @@ echo
 ld -T link.ld -Map nano-os.map loader.o runtime.o video.o kheap.o string.o \
 	OStream.o multiboot.o isr_wrap.o gdt.o idt.o irq.o kbd.o IStream.o \
 	ide.o drive.o cmos.o task.o timer.o fatfs.o pci.o \
-	gcpun.o gcpumore.o kernel.o  shell.o \
+	gcpun.o gcpumore.o kernel.o lock.o mutex.o shell.o \
          -o ./bin/nanos.elf 
 
 msg "removing object files and backup files"
