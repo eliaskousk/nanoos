@@ -243,9 +243,9 @@ void init_tasks()
 	//asm __volatile__("cli");
 	task_q=new que<thread>();
 	task_q->put(create_thread(idle,0,IDLE_PRIO));
-	//task_q->put(create_thread(thread1,(unsigned int )&b,LOW_PRIO));
+	task_q->put(create_thread(thread1,(unsigned int )&b,LOW_PRIO));
 	//task_q->put(create_thread(thread2,(unsigned int )&c,LOW_PRIO));
-	//task_q->put(create_thread(thread3,(unsigned int )&d,LOW_PRIO));
+	task_q->put(create_thread(thread3,(unsigned int )&d,LOW_PRIO));
 	//task_q->put(create_thread(thread4,(unsigned int )&a,LOW_PRIO));
 	task_q->put(create_thread(thread5,0,HIGH_PRIO)); //our shell
 	//cout<<"Total "<<task_q->get_num_nodes()<<" tasks started\n";

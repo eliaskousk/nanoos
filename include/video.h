@@ -9,7 +9,7 @@
 #define VIDEO_H
 
 #include "low-io.h"
-
+#include "mutex.h"
 //The different colours that can be set. Only the first 7 are relevent for background
 typedef enum Colours {BLACK, BLUE, GREEN, CYAN, RED, MAGENTA, BROWN,
 			 WHITE, DARKGRAY,BRIGHTBLUE, BRIGHTGREEN, BRIGHTCYAN, PINK, BRIGHTMAGENTA, YELLOW, BRIGHTWHITE
@@ -45,6 +45,7 @@ class video	//Video class
 		unsigned char colour ;			//Text colours
 		unsigned char text ;
 		unsigned char back ;
+		mutex vmt;
 };
 
 
