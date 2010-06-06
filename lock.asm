@@ -1,5 +1,11 @@
-;// atomic locking primitive
-;// 
+;//////////////////////////////////////////////////////////
+;// This file is a part of Nanos Copyright (C) 2008-2010 //
+;// ashok.s.das@gmail.com                                //
+;//////////////////////////////////////////////////////////
+;// lock/unlock code to be used in mutex class           //
+;//                                                      //
+;//////////////////////////////////////////////////////////
+
 [BITS 32]
 [SECTION .text]
 

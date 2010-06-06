@@ -11,6 +11,7 @@
 #include "IStream.h"
 #include "string.h"
 #include "gcpu.h"
+#include "task.h"
 class shell
 {
 	public:

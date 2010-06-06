@@ -319,6 +319,8 @@ _irq0:
     call eax              ; the call will not change the eip
     pop eax               ; here recall the esp as it was before the call
                           ; irq_handler  
+	mov esp,eax
+	mov eax,esp
 	push eax
 	call task_switch
 	mov esp,eax

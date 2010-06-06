@@ -1,4 +1,10 @@
-/*PCI Test code*/
+//////////////////////////////////////////////////////////
+// This file is a part of Nanos Copyright (C) 2008-2010 //
+// ashok.s.das@gmail.com                                //
+//////////////////////////////////////////////////////////
+// PCI test code                                        //
+//                                                      //
+//////////////////////////////////////////////////////////
 #include "low-io.h"
 #include "string.h"
 #include "OStream.h"
