@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////
-// This file is a part of Nanos Copyright (C) 2008, 2009//
+// This file is a part of Nanos Copyright (C) 2008-2010 //
 // ashok.s.das@gmail.com                                //
 //////////////////////////////////////////////////////////
 // basic shell                                          //
@@ -76,6 +76,10 @@ void shell::start()
 			{
 				probe_pci();	
 			}
+		else if(String::strncmp((const char*)cmd,"tasks",5)==0)
+			{
+				all_tasks();	
+			}
 		else
 			cout<<"Unknown Command\n For available commands type help\n";
 		
@@ -113,7 +117,8 @@ void shell::help()
 	cout<<"\tcpuinfo  -> displays cpu info\n";
 	cout<<"\tmeminfo  -> displays memory info\n";
 	cout<<"\thdinfo   -> displays hard disk info if any\n";
-	cout<<"\tPCI      -> displays PCI bus in a crude way\n"; 
+	cout<<"\tPCI      -> displays PCI bus in a crude way\n";
+	cout<<"\ttasks    -> displays Tasks currently in memory\n";
 }
 shell *myshell;
 void init_shell(void *)

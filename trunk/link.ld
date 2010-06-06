@@ -1,3 +1,10 @@
+/*//////////////////////////////////////////////////////////*/
+/*// This file is a part of Nanos Copyright (C) 2008-2010 //*/
+/*// ashok.s.das@gmail.com                                //*/
+/*//////////////////////////////////////////////////////////*/
+/*// Kernel linker                                        //*/
+/*//                                                      //*/
+/*//////////////////////////////////////////////////////////*/
 /* Link.ld -- Linker script for the kernel - ensure everything goes in the */
 /*            Correct place.  */
 /*            Original file taken from Bran's Kernel Development */

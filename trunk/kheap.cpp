@@ -1,4 +1,10 @@
-//myheap.cpp
+//////////////////////////////////////////////////////////
+// This file is a part of Nanos Copyright (C) 2008-2010 //
+// ashok.s.das@gmail.com                                //
+//////////////////////////////////////////////////////////
+// Kernel heap implementation                           //
+//                                                      //
+//////////////////////////////////////////////////////////
 #include "kheap.h"
 #include "OStream.h"
 #include "low-io.h"
