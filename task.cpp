@@ -175,6 +175,7 @@ void wait_on_thread(thread *t)
 	// parent should wait
 		curr->state=WAITING;
 	}
+	while(curr->state==WAITING);
 }
 thread *create_thread(func entry,unsigned int args,PRIO p,bool detached)
 {
@@ -394,11 +395,14 @@ void thread2(unsigned int n)
 {
 	int x,y;
 	//tm->sleep(50);
-	for(int i=0;i<1000;i++)
+	//for(int i=0;i<5;i++)
 	{
 		//disable();
 		x=cout.GetX();
-		y=cout.GetY();		
+		y=cout.GetY();	
+		cout<<" value at "<<n<<" is "<<*(int *)n<<"\n";
+		*(int*)n=20;
+		cout<<" value at "<<n<<" is "<<*(int *)n<<"\n";
 		//cout.gotoxy(70,5);
 		//cout<<"|\n"<<"   "<<*(int *)n<<"   \n";
 		//cout.clear();
@@ -428,25 +432,27 @@ void thread3(unsigned int n)
 void thread4(unsigned int n)
 {
 	int x,y;
-	char z;	
+	int z=10;	
 	//wait_ms(5);
 	//for(;;)
 	{
 		//disable();
 		x=cout.GetX();
-		y=cout.GetY();		
+		y=cout.GetY();
+				
 		//cout.gotoxy(70,5);
 		//cout<<"/\n"<<"   "<<*(int *)n<<"   \n";
 		//cout.gotoxy(x,y);
 		//enable();
-	//	cout<<"input a char ";
-	//	cin>>z;
-	//	cout<<"z="<<z<<"\n";
+		//cout<<"input an int ";
+		//cin>>z;
+		cout<<" address of z is "<<(unsigned)&z<<"\n";
+		cout<<"z="<<z<<"\n";
 		thread *chld;
 		chld=create_thread(thread2,(unsigned int)&z,LOW_PRIO,0);		
 		task_q->add(chld);
 		wait_on_thread(chld);
-	//	cout<<"z="<<z<<"\n";
+		cout<<"z="<<z<<"\n";
 		//wait_ms(10);
 	}
 }
@@ -463,10 +469,10 @@ void init_tasks()
 	zombie=new thread_que();
 	task_q->add(create_thread(idle,0,IDLE_PRIO,1));
 	task_q->add(create_thread(thread1,(unsigned int )&b,LOW_PRIO,1));
-	task_q->add(create_thread(thread2,(unsigned int )&c,LOW_PRIO,1));
+	//task_q->add(create_thread(thread2,(unsigned int )&c,LOW_PRIO,1));
 	task_q->add(create_thread(thread3,(unsigned int )&d,LOW_PRIO,1));
 	task_q->add(create_thread(thread4,(unsigned int )&a,LOW_PRIO,1));
-	task_q->add(create_thread(thread5,0,HIGH_PRIO,1)); //our shell
+	//task_q->add(create_thread(thread5,0,HIGH_PRIO,1)); //our shell
 	tasker=1;
 	enable();
 }
