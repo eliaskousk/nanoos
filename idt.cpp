@@ -134,6 +134,8 @@ extern "C" {
 			dump_regs(r);
         		cout<<exception_messages[r->int_no];
 			cout<<" System Halted!\n";
+			asm("pushf");
+			asm("cli");
 			halt();
         		//for (;;);
     		}

@@ -19,7 +19,7 @@
 using namespace IDT;
 using namespace String;
 using namespace IRQ;
-//#define _DEBUG_ 
+//#define _DEBUG_ FALSE
 //=========================thread_que class def================
 bool thread_que::add(thread *t)		// add a thread to the list
 {
@@ -111,7 +111,7 @@ thread *curr=NULL;
 static int current_task=-1;// no task is started.
 
 volatile int tasker=0;
-
+void wait_ms(unsigned int ms);
 void thread_stack_push(thread *t, unsigned int val)
 {
 	t->stack_top-=4;
@@ -120,7 +120,7 @@ void thread_stack_push(thread *t, unsigned int val)
 // if a thread exits then it will be caught by this function 
 static void thread_catcher()
 {
-	disable();
+	//disable();
 #ifdef _DEBUG_
 	cout.gotoxy(0,22);
 	cout<<" thread "<<curr->id<<" exiting\n";
@@ -140,7 +140,7 @@ static void thread_catcher()
 		parent->num_child--;
 	}
 	no_parent:
-	enable();
+	//enable();
 	// do we have some child who are active
 	while(curr->num_child!=0)
 	{	
@@ -174,8 +174,10 @@ void wait_on_thread(thread *t)
 	{
 	// parent should wait
 		curr->state=WAITING;
+		curr->timeslice=curr->max_ticks;
 	}
-	while(curr->state==WAITING);
+	wait_ms(10);
+	//while(curr->num_child==0);
 }
 thread *create_thread(func entry,unsigned int args,PRIO p,bool detached)
 {
@@ -401,7 +403,7 @@ void thread2(unsigned int n)
 		x=cout.GetX();
 		y=cout.GetY();	
 		cout<<" value at "<<n<<" is "<<*(int *)n<<"\n";
-		*(int*)n=20;
+		*(int *)n=20;
 		cout<<" value at "<<n<<" is "<<*(int *)n<<"\n";
 		//cout.gotoxy(70,5);
 		//cout<<"|\n"<<"   "<<*(int *)n<<"   \n";
@@ -421,6 +423,7 @@ void thread3(unsigned int n)
 		//disable();
 		x=cout.GetX();
 		y=cout.GetY();
+		*(int *)n=999;
 		//cout.gotoxy(70,5);
 		//cout<<"-\n"<<"   "<<*(int *)n<<"   \n";
 		//cout.gotoxy(x,y);
@@ -432,7 +435,7 @@ void thread3(unsigned int n)
 void thread4(unsigned int n)
 {
 	int x,y;
-	int z=10;	
+	int z=10,k=100;	
 	//wait_ms(5);
 	//for(;;)
 	{
@@ -447,12 +450,18 @@ void thread4(unsigned int n)
 		//cout<<"input an int ";
 		//cin>>z;
 		cout<<" address of z is "<<(unsigned)&z<<"\n";
+		cout<<" address of k is "<<(unsigned)&k<<"\n";
 		cout<<"z="<<z<<"\n";
-		thread *chld;
-		chld=create_thread(thread2,(unsigned int)&z,LOW_PRIO,0);		
+		cout<<"k="<<k<<"\n";
+		thread *chld,*chld1;
+		chld=create_thread(thread2,(unsigned int)&z,LOW_PRIO,0);
+		chld1=create_thread(thread3,(unsigned int)&k,LOW_PRIO,0);
 		task_q->add(chld);
+		task_q->add(chld1);
 		wait_on_thread(chld);
+		wait_on_thread(chld1);
 		cout<<"z="<<z<<"\n";
+		cout<<"k="<<k<<"\n";
 		//wait_ms(10);
 	}
 }
@@ -470,9 +479,9 @@ void init_tasks()
 	task_q->add(create_thread(idle,0,IDLE_PRIO,1));
 	task_q->add(create_thread(thread1,(unsigned int )&b,LOW_PRIO,1));
 	//task_q->add(create_thread(thread2,(unsigned int )&c,LOW_PRIO,1));
-	task_q->add(create_thread(thread3,(unsigned int )&d,LOW_PRIO,1));
+	//task_q->add(create_thread(thread3,(unsigned int )&d,LOW_PRIO,1));
 	task_q->add(create_thread(thread4,(unsigned int )&a,LOW_PRIO,1));
-	//task_q->add(create_thread(thread5,0,HIGH_PRIO,1)); //our shell
+	task_q->add(create_thread(thread5,0,HIGH_PRIO,1)); //our shell
 	tasker=1;
 	enable();
 }
