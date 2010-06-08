@@ -280,7 +280,8 @@ void show_tasks(thread_que *t)
 	for(int i=0;i<num_tasks;i++)
 	{
 		th=t->get();
-		cout<<"["<<i<<"] "<<th->id<<" ";
+		cout<<"["<<i<<"] "<<th->id<<" parent-id "<<th->pid;
+		cout<<" children "<<th->num_child<<" ";
 		_print_state(th->state);
 	}
 	asm("sti");
@@ -418,7 +419,7 @@ void thread3(unsigned int n)
 {
 	int x,y;
 	//wait_ms(5);
-	for(;;)
+	for(int i=0;;i++)
 	{
 		//disable();
 		x=cout.GetX();
