@@ -23,6 +23,7 @@
 			IStream& operator >> (char &c);
 			IStream& operator >> (unsigned char *ucp);
 			IStream& operator >> (unsigned char &uc);
+			IStream& operator >> (unsigned int &i);
 			char *getstring();
 			
 		private:

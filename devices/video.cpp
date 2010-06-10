@@ -117,7 +117,7 @@ void video::putchar(char c)
 						// cursor 
 		
 	setcursor(xpos, ypos);
-	iodelay();
+	//iodelay();
 	
 }
 
@@ -147,7 +147,7 @@ void video::setcursor(unsigned x, unsigned y)	//Hardware move cursor
 	outportb(crtc_mem + 1, offset >> 8);
 	outportb(crtc_mem + 0, 15);             // LSB of offset to CRTC reg 15 
 	outportb(crtc_mem + 1, offset);
-	iodelay();
+	//iodelay();
 	//vmt.unlock();
 }
 

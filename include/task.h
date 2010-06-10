@@ -10,7 +10,7 @@
 #include "idt.h"
 #include "low-io.h"
 #include "string.h"
-
+#include "mutex.h"
 
 using namespace IDT;
 using namespace String;
@@ -61,8 +61,12 @@ class thread_que
 	private:
 		thread_node *curr,*head,*tail;
 		int num_nodes;
+		mutex *thq;
 	public:
-		thread_que(): curr(NULL),head(NULL),tail(NULL),num_nodes(0) {};
+		thread_que(): curr(NULL),head(NULL),tail(NULL),num_nodes(0) 
+		{
+			thq=new mutex();
+		};
 		bool add(thread *t);
 		thread *get();
 		thread *get(states stat);

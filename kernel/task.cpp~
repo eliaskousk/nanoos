@@ -26,6 +26,7 @@ bool thread_que::add(thread *t)		// add a thread to the list
 	thread_node *temp=new thread_node;
 	if(temp==NULL)
 		return false;
+	this->thq->try_lock();
 	temp->data=t;
 	temp->next=NULL;
 	if(head==NULL)
@@ -38,10 +39,12 @@ bool thread_que::add(thread *t)		// add a thread to the list
 		tail=temp;
 	}
 	num_nodes++;
+	this->thq->unlock();
 	return true;
 };
 thread *thread_que::get()		// get next thread from list
 {
+	this->thq->try_lock();
 	if(curr==NULL)
 	{
 		curr=head;
@@ -49,15 +52,20 @@ thread *thread_que::get()		// get next thread from list
 	thread_node *temp;
 	temp=curr;
 	curr=curr->next;
+	this->thq->unlock();
 	return temp->data;
 };
 thread *thread_que::get(states stat)
 {
 	thread *t;
+	this->thq->try_lock();
 again:
 	t=get();
 	if(t->state==stat)
+	{
+		this->thq->unlock();
 		return t;
+	}
 	else
 		goto again;
 }
@@ -65,12 +73,14 @@ again:
 bool thread_que::remove(thread *t)	// remove a thread from list
 {
 	thread_node *temp1,*temp2;
+	this->thq->try_lock();
 	temp1=head;
 	if(head->data==t)
 	{
 		head=head->next;
 		delete temp1;
 		num_nodes--;
+		this->thq->unlock();
 		return true;
 	}
 	while(temp1->next)
@@ -81,24 +91,29 @@ bool thread_que::remove(thread *t)	// remove a thread from list
 			temp1->next=temp2->next;
 			delete temp2;
 			num_nodes--;
+			this->thq->unlock();
 			return true;
 		}
 		temp1=temp1->next;
 	}
+	this->thq->unlock();
 	return false;
 };
 
 thread *thread_que::get_thread_by_id(unsigned int tid) //get the thread by id
 {
+	this->thq->try_lock();
 	thread_node *temp=head;
 	while(temp)
 	{
 		if(temp->data->id==tid)
 		{
+			this->thq->unlock();
 			return (temp->data);
 		}
 		temp=temp->next;
 	}
+	this->thq->unlock();
 	return NULL;
 }
 //==========================thread_que def ends=======================
@@ -274,7 +289,7 @@ void _print_state(states stat)
 }	
 void show_tasks(thread_que *t)
 {
-	asm("cli");
+	//asm("cli");
 	int num_tasks=t->get_num_nodes();
 	thread *th;
 	for(int i=0;i<num_tasks;i++)
@@ -284,7 +299,7 @@ void show_tasks(thread_que *t)
 		cout<<" children "<<th->num_child<<" ";
 		_print_state(th->state);
 	}
-	asm("sti");
+	//asm("sti");
 }
 void all_tasks()
 {
