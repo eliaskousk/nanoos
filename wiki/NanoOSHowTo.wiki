@@ -8,13 +8,11 @@
 
 * compilation and testing *
   # Go to downloaded source directory
-  # Execute ./build.sh
-  # Watch the Last line says " Congrats ..."
-  # If you see this Congrats message then every thing is fine.
+  # Execute make
   # If something is wrong then you are screwed somewhere please check all the messages.
-  # After You got the kernel compiled, copy it to the Grug Floppy image and modify the grub.conf or menu.lst file to reflect the kernel name
-  # To try out some hard disk image create some hd image using dd;
-  # Get a FreeDos Livecd to boot "qemu -cdrom fdfull.iso -hda <your hd image name> -boot d"
+  # The make file is configured for mounting the /tmp/nanoos.img and copying the kernel to it.
+  # To try out some hard disk image create some hd image using dd;(TEMPORARILY WITHDRAWN)
+  # Get a FreeDos Livecd to boot "qemu -cdrom fdfull.iso -hda <your hd image name> -boot d" 
   # after booting into DOS do fdisk and save
   # exit FreeDos
   # boot nano os as "qemu -fda <nanoos fd image> -hda <your hd image name> -boot a"
