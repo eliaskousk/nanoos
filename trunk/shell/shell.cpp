@@ -10,10 +10,7 @@
 #include "cmos.h"
 #include "gcpu.h"
 #include "multiboot.h"
-#include "ide.h"
-//#include "fdc.h"
-#include "drive.h"
-//#include "floppy.h"
+
 extern void probe_pci();
 shell::shell()
 {
@@ -55,27 +52,13 @@ void shell::start()
 			cpuinfo();
 		else if(String::strncmp((const char*)cmd,"meminfo",7)==0)
 			meminfo();
-		else if(String::strncmp((const char*)cmd,"hdinfo",6)==0)
-		{
-			for(int i=0;i<4;i++)
-			if(disks[i])
-			{
-				disks[i]->disk_info();
-			}
-		}
-		else if(String::strncmp((const char*)cmd,"sysdriveinfo",12)==0)
-		{
-			sys_drv_info();
-		}			
+			
 		else if(String::strncmp((const char*)cmd,"bootdev",7)==0)
 			{
 				extern char *boot_dev;
 				cout<<(char *)boot_dev<<"\n";
 			}
-		else if(String::strncmp((const char*)cmd,"PCI",3)==0)
-			{
-				probe_pci();	
-			}
+		
 		else if(String::strncmp((const char*)cmd,"tasks",5)==0)
 			{
 				all_tasks();	
@@ -116,8 +99,7 @@ void shell::help()
 	cout<<"\thello    -> displays hi string\n";
 	cout<<"\tcpuinfo  -> displays cpu info\n";
 	cout<<"\tmeminfo  -> displays memory info\n";
-	cout<<"\thdinfo   -> displays hard disk info if any\n";
-	cout<<"\tPCI      -> displays PCI bus in a crude way\n";
+	
 	cout<<"\ttasks    -> displays Tasks currently in memory\n";
 }
 shell *myshell;

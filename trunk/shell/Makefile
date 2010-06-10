@@ -1,0 +1,2 @@
+OBJS += shell/shell.o
+

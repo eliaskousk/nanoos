@@ -18,18 +18,15 @@
 #include "shell.h"
 #include "multiboot.h"
 #include "kheap.h"
-//#include "fdc.h"
-//#include "floppy.h"
-#include "ide.h"
-#include "drive.h"
+
 #include "task.h"
 extern "C" int kmain(unsigned int magic, multibootInfo *mb);
-//extern struct multibootHeader mboot; //this comes from the loader.asm 
+ 
 extern void init_tasks();
 unsigned int memend; 
 unsigned int kend;
 char boot_dev[4];
-//extern thread threads[32];
+
 int kmain(unsigned int magic,multibootInfo *mb)
 {
 	construct(); //construct the global objects	
@@ -40,7 +37,7 @@ int kmain(unsigned int magic,multibootInfo *mb)
 	multiboot *m_boot;
 	
 	cout<<"Nano OS is booting\n";
-	//String::strcpy(boot_dev,(const char *)mb->bootDevice);	
+	String::strcpy(boot_dev,(const char *)mb->bootDevice);	
 	init_heap();
 	
 	cout<<"Setting up GDT ";
@@ -77,55 +74,19 @@ int kmain(unsigned int magic,multibootInfo *mb)
 	cout<<"\n\n"<<"Enabling Interrupts\n";	
 	enable();
 	cout<<"done\n";
-	//init_disks();
-	//init_sys_drv();
-	//cout<<"Finished init_disks\n";
-	//unsigned char read_buf[512];
-	//if(disks[0])
-	//{
-	//	disks[0]->disk_info();
-	//}	
-	//my_req.buf=read_buf;
-	//if(ide0->ide_read_sectors(&my_req))
-	//	dump(read_buf,128); 
-	//IDE *ide1=new IDE(0x4000,0x1f0,0x3f6,8,1,0xb0);
-	//IDE *ide2=new IDE(0x8000,0x170,0x3f6,8,1,0xa0);
-	//IDE *ide3=new IDE(0x8000,0x170,0x3f6,8,1,0xb0);
-	//cout<<"\n\n"<<"Enabling Interrupts\n";
-	//enable();
+	
 	cout<<"\n"<<"Dumping IRQ routines \n";
 	IRQ::dump_irq_routines();
 	cout<<"\nDone\n";
+	
 	cout<<"Initializing tasking ";
 	init_tasks();
 	cout<<"done\n";
 	for(;;);
-	cout<<"Press any key to start shell";
-	cin>>ans;
-	cout<<"\nStarting Shell\n";
-	//shell *myshell =new shell;
-	//myshell->start();	
-	//create_thread(init_shell,NULL);
-	//threads[1].state=RUNNING;
-	//cout<<(char *)mb->commandLine<<"\n";
 	cout<<"\nReached End of kernel\n shoud not happen \n\nGOODBYE\n";
 	disable();
 	halt();	
-	/*cout<<"testing new delete" <<"\n";
-	int *a,*b,*c;
-	dump_heap();
-	a = (int *)kmalloc(10*sizeof(int));
-	dump_heap();
-	b = (int *)kmalloc(20*sizeof(int));
-	dump_heap();
-	c = (int *)kmalloc(1000*sizeof(int));
-	dump_heap();
-	kfree(b);
-	dump_heap();
-	kfree(a);
-	dump_heap();
-	a = (int *)kmalloc(40*sizeof(int));
-	dump_heap;*/
+	
 	return 0;	
 }
 
