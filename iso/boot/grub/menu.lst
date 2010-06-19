@@ -1,0 +1,10 @@
+deafult 0
+
+timeout 5
+
+
+title nanoos
+root (fd0)
+kernel /boot/nanos.elf
+boot
+
