@@ -1,0 +1,10 @@
+deafult 0
+
+timeout 5
+
+
+title nanoos
+
+kernel /boot/nanos.elf
+quiet
+

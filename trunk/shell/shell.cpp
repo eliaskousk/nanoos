@@ -10,7 +10,7 @@
 #include "cmos.h"
 #include "gcpu.h"
 #include "multiboot.h"
-
+#include "pci.h"
 extern void probe_pci();
 shell::shell()
 {
@@ -52,7 +52,8 @@ void shell::start()
 			cpuinfo();
 		else if(String::strncmp((const char*)cmd,"meminfo",7)==0)
 			meminfo();
-			
+		else if(String::strncmp((const char*)cmd,"pci",3)==0)
+			pci_bus_scan();	
 		else if(String::strncmp((const char*)cmd,"bootdev",7)==0)
 			{
 				extern char *boot_dev;

@@ -3,6 +3,7 @@
 #ifndef __QUEUE_H__
 #define __QUEUE_H__
 #include "mutex.h"
+
 using namespace std;
 
 template <class T>
@@ -19,7 +20,7 @@ template <class T> class que
 		unsigned int num_nodes;
 		mutex *q_mt;
 	public:
-		que() :head(NULL), tail(NULL), num_nodes(0)
+		que() :head(0), tail(0), num_nodes(0)
 		{
 			q_mt=new mutex(); 
 		};
@@ -40,8 +41,8 @@ template <class T> class que
 			q_mt->try_lock();
 			node<T> *temp=new node<T>;
 			temp->data=dat;
-			temp->next=NULL;
-			if(tail==NULL)
+			temp->next=0;
+			if(tail==0)
 			{
 				tail=temp;
 				head=tail;
