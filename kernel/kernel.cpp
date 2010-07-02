@@ -15,11 +15,11 @@
 #include "timer.h"
 #include "kbd.h"
 #include "IStream.h"
-#include "shell.h"
+//#include "shell.h"
 #include "multiboot.h"
 #include "kheap.h"
-
 #include "task.h"
+#include "pci.h"
 extern "C" int kmain(unsigned int magic, multibootInfo *mb);
  
 extern void init_tasks();
@@ -71,6 +71,10 @@ int kmain(unsigned int magic,multibootInfo *mb)
 	cout<<"my_timer at "<<(unsigned int)my_timer<<"\n";	
 	cout<<"Mboot at "<<(unsigned int)m_boot<<"\n";
 	dump_heap();
+	cout<<"Scanning PCI...\n";
+	pci_bus *sys_pci_bus=pci_bus::Instance();
+	sys_pci_bus->scan();
+	
 	cout<<"\n\n"<<"Enabling Interrupts\n";	
 	enable();
 	cout<<"done\n";

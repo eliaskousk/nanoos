@@ -155,5 +155,5 @@ void read_sector(unsigned short port,unsigned int blk,char *read_buf);
 void dump(void *data_p, unsigned count);
 void hex_dump (const unsigned char *data, int len);
 //void ide_read_handler(regs *r);
-
+void display_ide();
 #endif
