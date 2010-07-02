@@ -11,7 +11,8 @@
 #include "gcpu.h"
 #include "multiboot.h"
 #include "pci.h"
-extern void probe_pci();
+
+extern void display_ide();
 shell::shell()
 {
 	cout.clear();	
@@ -53,7 +54,10 @@ void shell::start()
 		else if(String::strncmp((const char*)cmd,"meminfo",7)==0)
 			meminfo();
 		else if(String::strncmp((const char*)cmd,"pci",3)==0)
-			pci_bus_scan();	
+		{
+			pci_bus *sys_pci=pci_bus::Instance();
+			sys_pci->list_dev();
+		}	
 		else if(String::strncmp((const char*)cmd,"bootdev",7)==0)
 			{
 				extern char *boot_dev;
@@ -63,6 +67,10 @@ void shell::start()
 		else if(String::strncmp((const char*)cmd,"tasks",5)==0)
 			{
 				all_tasks();	
+			}
+		else if(String::strncmp((const char*)cmd,"ide",3)==0)
+			{
+				display_ide();	
 			}
 		else
 			cout<<"Unknown Command\n For available commands type help\n";
