@@ -7,9 +7,10 @@
 //////////////////////////////////////////////////////////
 #ifndef __IDE_H__
 #define __IDE_H__
-#include "idt.h"
-#define ATA_BASE_PRI	0x1f0 
-#define ATA_BASE_SEC	0x170
+//#include "idt.h"
+#define ATA_BASE_PRI	0x1f0 	// default ISA
+#define ATA_BASE_SEC	0x170	// default ISA
+// bellow are offset from ATA_BASE_xxx
 #define DATA_REG	0	//RW
 #define ERR_REG		1	//R
 #define FEATURE_REG	1	//RW
@@ -21,7 +22,7 @@
 #define STATUS_REG	7	//r
 #define CMD_REG		7	//W
 #define ALT_ST_REG	0x206	//R
-#define DEV_CTRL_REG	0x206	//w
+#define DEV_CTRL_REG	0x206	//w 
 //status register fields
 #define STA_ERR		1<<0	//error
 #define STA_IDX		1<<1	//index mark
@@ -130,7 +131,7 @@ class disk
 		void write_sector(unsigned int blk,unsigned char *buf){};
 		disk(){};
 		~disk(){};
-		static void disk_handler(IDT::regs *r);
+		//static void disk_handler(IDT::regs *r);
 		void disk_info();
 		void populate_partitions();
 		bool is_partitioned(){ return has_valid_partition_tbl;};
