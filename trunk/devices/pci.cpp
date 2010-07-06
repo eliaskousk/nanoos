@@ -407,7 +407,7 @@ void pci_bus::scan()
 					temp[i]=pci_read_config_dword(bus,dev,fun,i<<2);
 				}
 				cfg=(struct PCI_common*)temp;
-				if(cfg->vendor_id==0xffff)
+				if((cfg->vendor_id==0xffff) || (cfg->vendor_id==0x0000))
 				{
 					delete[] temp;
 					continue;
