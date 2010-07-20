@@ -7,9 +7,11 @@
 //////////////////////////////////////////////////////////
 #ifndef __IDE_H__
 #define __IDE_H__
-//#include "idt.h"
+#include "idt.h"
 #define ATA_BASE_PRI	0x1f0 	// default ISA
 #define ATA_BASE_SEC	0x170	// default ISA
+#define MASTER				0xA0
+#define SLAVE				0xB0
 // bellow are offset from ATA_BASE_xxx
 #define DATA_REG	0	//RW
 #define ERR_REG		1	//R
@@ -67,38 +69,41 @@
 #define	read_le16(X)	*(unsigned short *)(X)
 #define	read_be16(X)	bswap16(*(unsigned short *)(X))
 
-typedef struct
+// devtype defines
+#define PATA	0
+#define PATAPI	1
+#define SATA	2
+#define	SATAPI	3
+// Primary or Secondary channel's register values
+typedef struct channel  
 {
-	unsigned char dma;			/* 8-bit DMA mask */
-	unsigned short irq;			/* 16-bit IRQ mask */
-	unsigned short adr[NUM_IO_SPANS];	/* start of I/O range */
-	unsigned short span[NUM_IO_SPANS];	/* length of I/O range */
-}__attribute__((packed)) io_t;
-typedef struct
+	unsigned short base_reg; // base reg for the challel 
+	unsigned short ctrl_reg; // ctrl reg for the channel
+	unsigned short bmide;    // bus master IDE same for both channel but we will put
+                                 // it in every instance  
+	unsigned int   intr;	 // Interrupt assigned to this channel
+	unsigned char nIEN;  // no interrupt 
+} __attribute__((packed)) channel;
+extern channel ctrl_channel[2];
+// the structure to represent one ide/PATA drive
+typedef struct IDEdrive
 {
-/* hardware interface (hwif; or "bus") */
-	io_t io;
-/* which drive on the hwif? 2 for IDE, 4 for floppy, 7 for SCSI */
-	unsigned char unit;
-/* generic info (i.e. used by ALL types of block device) */
-	unsigned long num_blks;
-	unsigned short bytes_per_blk;
-/* floppy and CHS IDE only */
-	unsigned short sectors, heads, cyls;
-}__attribute__((packed)) blkdev_t;
-typedef struct
-{
-/* generic block device info */
-	blkdev_t blkdev;
-/* information specific to IDE drive */
-	unsigned has_lba : 1;
-	unsigned use_lba : 1;
-	unsigned has_dma : 1;
-	unsigned use_dma : 1;
-	unsigned has_multmode : 1;
-	unsigned use_multmode : 1;
-	unsigned short mult_count;
-} __attribute__((packed)) ide_t;
+	channel 	*chan;		// structure to represent the channel of this IDE device
+	unsigned short	devnum:1;	// master = 0 slave = 1
+	unsigned short	devtyp:2;	// ATA or ATAPI,SATA,SATAPI
+	unsigned short	lba:2;		// no LBA, LBA-28,LBA-48
+	unsigned short	use_lba:1;	// are we going to use LBA(1) or CHS(0)
+	unsigned short	dma:1;		// DMA capable???
+	unsigned short	use_dma:1;	// use dma(1) don't use(0)
+	unsigned short	multimode:1;	// has multi mode 
+	unsigned short	use_multimode:1;// use multimode ??
+	unsigned short	mult_count;
+	unsigned int	totalsectors;
+	unsigned char	model_name[41];	// 40 char name nullterminated
+	unsigned char   serial[20];
+	unsigned char	firmware[8];
+} __attribute__((packed)) IDEdrive;
+// partition entry in the drive
 typedef struct part_entry
 {
 	unsigned int boot_flag:8;
@@ -112,28 +117,73 @@ typedef struct part_entry
 	unsigned int  beg_lba;
 	unsigned int  tot_sect;
 } __attribute__((packed)) part_entry_t;
+typedef struct IdentifyData
+{
+    unsigned short type;
+    unsigned short reserved1[9];
+    unsigned char  serial[20];
+    unsigned short reserved2[3];
+    unsigned char  firmware[8];
+    unsigned char  model[40];
+    unsigned short maxTransfer; // max num of sects to be xfered in read/write multiple
+    unsigned short trustedFeatures;
+    unsigned short capabilities[2];
+    unsigned short reserved3[8];
+    unsigned int sectors28;
+    unsigned short reserved4[18];
+    unsigned short majorRevision;
+    unsigned short minorRevision;
+    unsigned short supported[6]; // command set supported
+    unsigned short reserved5[12];
+    unsigned long long sectors48;
+    unsigned short reserved6[2];
+    unsigned short sectorSize;
+} __attribute__((packed)) identify_data;
+
+bool pio_wait_ready(unsigned short,bool);
+bool ata_identify(IDEdrive *drv);
 class disk
 {
 	private:
-		ide_t physical;
+		IDEdrive *physical;
 		bool has_valid_partition_tbl;
 		
 		//unsigned char sect_buf[512]={0};
 	public:
+		disk()
+		{
+			physical=new IDEdrive();
+			has_valid_partition_tbl=false;
+		};
+		~disk()
+		{
+			delete physical;
+		};
 		part_entry_t part_table[4]; //drive has 4 primary partitions
-		void populate_ide_disk(unsigned short which, unsigned short unit);
-		int wait_ready(unsigned short port,unsigned int timeout);
+		void populate_ide_disk(channel *chan, unsigned short unit)
+		{
+			physical->chan=chan;
+			physical->devnum=unit;
+		};
+		bool wait_ready(unsigned short port)
+		{
+			return (pio_wait_ready(port,true));
+		};
 		
-		int wait_interrupt(unsigned short int_mask,unsigned int timeout);
-		int identify();
+		//int wait_interrupt(unsigned short int_mask,unsigned int timeout);
+		bool identify()
+		{
+			return (ata_identify(physical));
+		}
 		
-		void read_sector(unsigned int blk,unsigned char *read_buf);
+		void read_sector(unsigned int blk,unsigned char *read_buf){};
 		void write_sector(unsigned int blk,unsigned char *buf){};
-		disk(){};
-		~disk(){};
+		void part_ent_info(int i){};
+		
 		//static void disk_handler(IDT::regs *r);
-		void disk_info();
-		void populate_partitions();
+		void disk_info(){};
+		void populate_partitions(){};
+		void disk_handler(IDT::regs *r){};
 		bool is_partitioned(){ return has_valid_partition_tbl;};
 		bool is_valid_part_entry(int partn){ if(part_table[partn].tot_sect>0)
 							return true;
@@ -148,8 +198,8 @@ class disk
 };
 extern disk *disks[4];
 void init_disks();
-int ide_select(ide_t *ide);
-int detect_cntrlr(unsigned short port);
+//int ide_select(ide_t *ide);
+bool detect_cntrlr(unsigned short port);
 void detect_ide();
 void read_sector(unsigned short port,unsigned int blk,char *read_buf);
 //void ide_handler(regs *r);

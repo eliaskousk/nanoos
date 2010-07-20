@@ -11,7 +11,7 @@
 #include "low-io.h"
 #include "OStream.h"
 #include "string.h"
-using namespace std;
+//using namespace std;
 using namespace String;
 // reads pci bus
 // takes bus number device number function number register and type
@@ -475,17 +475,62 @@ pci_dev *pci_bus::get_dev(unsigned short vendor,unsigned short device)
 	}
 	return NULL;
 }
+pci_dev *pci_bus::get_dev_by_class(unsigned char classcode)
+{
+	pci_dev *temp,*temp2=NULL,*curr;
+	temp=pci_list;
+	while(temp)
+	{
+		if(temp->common->classcode==classcode)
+		{
+			if(temp2==NULL)
+			{
+				temp2=new pci_dev;
+				memcpy(temp2,temp,sizeof(pci_dev));
+				curr=temp2;
+				curr->next=NULL;
+			}
+			else
+			{
+				curr->next=new pci_dev;
+				memcpy(curr->next,temp,sizeof(pci_dev));
+				curr=curr->next;
+				curr->next=NULL;
+			}
+		}
+		temp=temp->next;
+	}
+	curr->next=NULL;
+	return temp2;
+}	
 pci_dev *pci_bus::get_dev(unsigned char classcode,unsigned char subclass)
 {
-	pci_dev *temp;
+	pci_dev *temp,*temp2=NULL,*curr;
 	temp=pci_list;
 	while(temp)
 	{
 		if(temp->common->classcode==classcode && temp->common->subclass==subclass)
-			return temp;
+		{
+			if(temp2==NULL)
+			{
+				temp2=new pci_dev;				
+				memcpy(temp2,temp,sizeof(pci_dev));
+				curr=temp2;
+				curr->next=NULL;
+			}
+			else
+			{
+				curr->next=new pci_dev;
+				memcpy(curr->next,temp,sizeof(pci_dev));
+				curr=curr->next;
+				curr->next=NULL;
+			}
+		//	return temp;
+		}
 		temp=temp->next;
 	}
-	return NULL;
+	curr->next=NULL;
+	return temp2;
 }
 bar_type_t get_bar_type(pci_dev *dev,int bar_num)
 {

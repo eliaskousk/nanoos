@@ -139,6 +139,7 @@ class pci_bus: public Singleton<pci_bus>
 		void scan();
 		pci_dev *get_dev(unsigned short vendor,unsigned short device);
 		pci_dev *get_dev(unsigned char classcode,unsigned char subclass);
+		pci_dev *get_dev_by_class(unsigned char classcode);
 };
 const char *vendor_to_string(unsigned short vend_id);
 const char *vendor_device_to_string(unsigned short vendor,unsigned short device);

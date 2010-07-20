@@ -2,4 +2,5 @@ OBJS += devices/kbd.o \
 	devices/timer.o \
 	devices/video.o \
 	devices/pci.o \
-	devices/ide.o
+	devices/myata.o  
+	
