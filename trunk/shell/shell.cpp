@@ -11,7 +11,7 @@
 #include "gcpu.h"
 #include "multiboot.h"
 #include "pci.h"
-
+#include "drive.h"
 extern void display_ide();
 shell::shell()
 {
@@ -57,6 +57,26 @@ void shell::start()
 		{
 			pci_bus *sys_pci=pci_bus::Instance();
 			sys_pci->list_dev();
+		}
+		else if(String::strncmp((const char*)cmd,"devclass",8)==0)
+		{
+			pci_bus *sys_pci=pci_bus::Instance();
+			unsigned short x=atoi(cmd+9);
+			pci_dev *device=sys_pci->get_dev_by_class(x);
+			int i=0;
+			while(device)
+			{
+				cout.flags(hex|showbase);
+				cout<<device->bus<<":"<<device->dev<<":"<<device->func<<":";
+				cout<<vendor_to_string(device->common->vendor_id)<<":"<<vendor_device_to_string(device->common->vendor_id,device->common->device_id)<<":";
+				cout<<class_to_string(device->common->classcode,device->common->subclass)<<":";
+				cout<<(int)device->common->classcode<<":"<<(int)device->common->subclass<<":";
+				cout<<(int)(device->common->Prog_if)<<":"<<(int)device->common->header_type<<"\n";
+				i++;
+				device=device->next;
+			}
+			cout.flags(dec);
+			cout<<"Total devices="<<i<<"\n";
 		}	
 		else if(String::strncmp((const char*)cmd,"bootdev",7)==0)
 			{
@@ -70,8 +90,20 @@ void shell::start()
 			}
 		else if(String::strncmp((const char*)cmd,"ide",3)==0)
 			{
-				display_ide();	
+				//display_ide();	
 			}
+		else if(String::strncmp((const char*)cmd,"hdinfo",6)==0)
+		{
+			for(int i=0;i<4;i++)
+			//if(disks[i])
+			{
+				//disks[i]->disk_info();
+			}
+		}
+		else if(String::strncmp((const char*)cmd,"sysdriveinfo",12)==0)
+		{
+			//sys_drv_info();
+		}
 		else
 			cout<<"Unknown Command\n For available commands type help\n";
 		

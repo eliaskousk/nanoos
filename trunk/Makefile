@@ -18,7 +18,7 @@ all: clean $(OBJS)
 
 .cpp.o:
 	@echo " [G++]		"$@
-	@g++ -o $@ $? $(CXXFLAGS)
+	@gcc -o $@ $? $(CXXFLAGS)
 
 .s.o:
 	@echo " [ASM]		"$@

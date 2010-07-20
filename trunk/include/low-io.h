@@ -44,6 +44,14 @@ inline static void outportl(unsigned short _port, unsigned int _data)
 {
 	__asm__ __volatile__ ("outl %%eax, %%dx" : : "d" (_port), "a" (_data));
 }
+inline static void insb(unsigned short port, unsigned char *data, unsigned int count)
+{
+	for(;count !=0;count--)
+	{
+		*data = inportb(port);
+		data++;
+	}
+}
 inline static void insw(short port, unsigned short *data, unsigned count)
 {
 	for(; count != 0; count--)
@@ -52,11 +60,35 @@ inline static void insw(short port, unsigned short *data, unsigned count)
 		data++;
 	}
 }
+inline static void insdw(unsigned short port, unsigned int *data, unsigned int count)
+{
+	for(; count != 0; count--)
+	{
+		*data = inportl(port);
+		data++;
+	}
+}
+inline static void outsb(unsigned short port, unsigned char *data, unsigned int count)
+{
+	for(; count != 0; count--)
+	{
+		outportb(port, *data);
+		data++;
+	}
+}
 inline static void outsw(short port, unsigned short *data, unsigned count)
 {
 	for(; count != 0; count--)
 	{
 		outportw(port, *data);
+		data++;
+	}
+}
+inline static void outsdw(unsigned short port, unsigned int *data, unsigned int count)
+{
+	for(; count != 0; count--)
+	{
+		outportl(port, *data);
 		data++;
 	}
 }
