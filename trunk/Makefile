@@ -38,7 +38,7 @@ iso: all
 	mkisofs -U -b boot/grub/iso9660_stage1_5 -no-emul-boot \
 		-f -hide boot.catalog -boot-load-size 4 -boot-info-table \
 		-o "nanoos.iso" -V "NanOS LiveCD" \
-		-quiet iso/ 
+		 iso/ 
 floppy: all
 		
 	@echo "Mounting floppy image "

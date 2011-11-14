@@ -87,7 +87,7 @@ int kmain(unsigned int magic,multibootInfo *mb)
 	cout<<"\nDone\n";
 	
 	cout<<"Initializing tasking ";
-	//init_tasks();
+	init_tasks();
 	cout<<"done\n";
 	for(;;);
 	cout<<"\nReached End of kernel\n shoud not happen \n\nGOODBYE\n";
