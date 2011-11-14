@@ -18,7 +18,9 @@ unsigned char read_cmos(unsigned char reg)
 	outportb(0x70,0);   //close the command port
 	return val;
 }
-
+// reads the cmos date and time and prints it
+// takes nothing
+// returns nothing.
 void get_cmos_date_time()
 {
 	int year,month,date,day,hour,minute,second;
