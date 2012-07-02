@@ -20,7 +20,7 @@
 #include "kheap.h"
 #include "task.h"
 #include "pci.h"
-//#include "drive.h"
+#include "drive.h"
 #include "ide.h"
 
 extern "C" int kmain(unsigned int magic, multibootInfo *mb);
@@ -77,7 +77,7 @@ int kmain(unsigned int magic,multibootInfo *mb)
 	pci_bus *sys_pci_bus=pci_bus::Instance();
 	sys_pci_bus->scan();
 	init_disks();
-	//init_sys_drv();	
+	init_sys_drv();	
 	cout<<"\n\n"<<"Enabling Interrupts\n";	
 	enable();
 	cout<<"done\n";

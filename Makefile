@@ -6,7 +6,7 @@ include shell/Makefile
 
 INCLUDE := -I./include 
 CFLAGS  := $(INCLUDE) -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -c -g 
-CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions -fpic
+CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions -fpic -D_DEBUG_
 
 all: clean $(OBJS)
 	@echo " [LD]        kernel"
@@ -29,6 +29,9 @@ clean:
 	@rm -f $(OBJS)
 	@echo "Removing Kernel"
 	@rm -f ./bin/nanos.elf
+	@echo "Removing LiveCD if any"
+	@rm -f NanoOs.iso
+	rm -rf iso
 
 iso: all
 	mkdir -p iso/boot/grub
@@ -39,12 +42,17 @@ iso: all
 		-f -hide boot.catalog -boot-load-size 4 -boot-info-table \
 		-o "nanoos.iso" -V "NanOS LiveCD" \
 		 iso/ 
+iso2: all
+	mkdir -p iso/boot/grub
+	cp ./bin/nanos.elf ./iso/boot
+	cp grub.cfg ./iso/boot/grub
+	grub2-mkrescue -o NanoOs.iso iso
 floppy: all
 		
 	@echo "Mounting floppy image "
 	@sudo mount /tmp/nanoos.img /mnt -o loop
 	@echo "Copying kernle image "
-	@sudo cp -i ./bin/nanos.elf /mnt/boot/nanos.elf
+	@sudo cp -ip ./bin/nanos.elf /mnt/boot/nanos.elf
 	@sync
 	@echo "Unmounting Floppy image"
 	@sudo umount /mnt

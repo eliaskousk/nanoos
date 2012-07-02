@@ -94,15 +94,15 @@ void shell::start()
 			}
 		else if(String::strncmp((const char*)cmd,"hdinfo",6)==0)
 		{
-			for(int i=0;i<4;i++)
-			//if(disks[i])
+			/*for(int i=0;i<4;i++)
+			if(ide_disks[i])
 			{
-				//disks[i]->disk_info();
-			}
+				disks[i]->disk_info();
+			}*/
 		}
 		else if(String::strncmp((const char*)cmd,"sysdriveinfo",12)==0)
 		{
-			//sys_drv_info();
+			sys_drv_info();
 		}
 		else
 			cout<<"Unknown Command\n For available commands type help\n";

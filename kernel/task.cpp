@@ -492,10 +492,10 @@ void init_tasks()
 	zombie=new thread_que();
 	task_q->add(create_thread(idle,0,IDLE_PRIO,1));
 	task_q->add(create_thread(thread1,(unsigned int )&b,LOW_PRIO,1));
-	//task_q->add(create_thread(thread2,(unsigned int )&c,LOW_PRIO,1));
-	//task_q->add(create_thread(thread3,(unsigned int )&d,LOW_PRIO,1));
+	task_q->add(create_thread(thread2,(unsigned int )&c,LOW_PRIO,1));
+	task_q->add(create_thread(thread3,(unsigned int )&d,LOW_PRIO,1));
 	task_q->add(create_thread(thread4,(unsigned int )&a,LOW_PRIO,1));
-	task_q->add(create_thread(thread5,0,HIGH_PRIO,1)); //our shell
+	//task_q->add(create_thread(thread5,0,HIGH_PRIO,1)); //our shell
 	tasker=1;
 	enable();
 }
