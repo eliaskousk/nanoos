@@ -97,11 +97,14 @@ typedef struct IDEdrive
 	unsigned short	use_dma:1;	// use dma(1) don't use(0)
 	unsigned short	multimode:1;	// has multi mode 
 	unsigned short	use_multimode:1;// use multimode ??
+	unsigned short	has_valid_mbr:1;
+	unsigned short	is_partitioned:1;
 	unsigned short	mult_count;
 	unsigned int	totalsectors;
 	unsigned char	model_name[41];	// 40 char name nullterminated
 	unsigned char   serial[20];
 	unsigned char	firmware[8];
+	unsigned char	mbr[512];
 } __attribute__((packed)) IDEdrive;
 // partition entry in the drive
 typedef struct part_entry
@@ -142,7 +145,7 @@ typedef struct IdentifyData
 
 bool pio_wait_ready(unsigned short,bool);
 bool ata_identify(IDEdrive *drv);
-class disk
+/*class disk
 {
 	private:
 		IDEdrive *physical;
@@ -195,8 +198,8 @@ class disk
 			//please do a checks.			
 			read_sector(part_table[partn].beg_lba,buf);
 		};
-};
-extern disk *disks[4];
+};*/
+//extern disk *disks[4];
 void init_disks();
 //int ide_select(ide_t *ide);
 bool detect_cntrlr(unsigned short port);

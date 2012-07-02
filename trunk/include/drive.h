@@ -24,7 +24,7 @@
 #define UNKFS 0x05
 class drive{
 		private:
-			int ide_chan;
+			IDEdrive * ide;
 			bool is_partition;			
 			int partition;
 			bool has_fs;
@@ -40,7 +40,7 @@ class drive{
 			void write(){ cout<<"Not Implemented\n";};
 			void format(){ cout<<"Not implemented\n";};
 			void info();
-			void set_ide_chan(int chan){ ide_chan=chan;};
+			void set_ide(IDEdrive *drv){ ide=drv;};
 			bool is_a_partition(){ return is_partition; };
 			void set_is_partition(bool val){ is_partition = val;};
 			void set_partition_num(int part){ partition = part;};
@@ -48,7 +48,7 @@ class drive{
 			bool has_an_fs(){ return has_fs;};
 			void set_fs_type(int fstyp){ fs_type = fstyp; };
 			int get_fs_type(){ return fs_type;};
-			int get_ide_chan(){ return ide_chan; };
+			//int get_ide_chan(){ return ide_chan; };
 			int get_partition_number(){ return partition;};
 			
 				

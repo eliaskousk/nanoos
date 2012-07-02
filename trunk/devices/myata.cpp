@@ -11,13 +11,13 @@
 #include "ide.h"
 #include "string.h"
 using namespace String;
-unsigned char buff[4096]; // ATAPI needs a 4096 byte buffer. 
+//unsigned char buff[4096]; // ATAPI needs a 4096 byte buffer. 
                             // ATA hd can work with 512 bytes
 channel ctrl_channel[2];
 int ide_drv[4];
 //disk *disks[4]={NULL};//*ide0,*ide1,*ide2,*ide3; //maximum 4 physical disks on 2 IDE controller
 
-IDEdrive *ide_disks[4]={NULL};
+IDEdrive *ide_disks[4]={NULL,};
 
 
 #define IDENTIFY_TEXT_SWAP(field,size) \
@@ -144,11 +144,11 @@ bool pio_wait_ready(unsigned short port,bool nodata)
 	while (true)
     	{
 		unsigned char status = inportb(port + STATUS_REG);
-		if (!(status & STA_BSY) && (status & STA_DRQ || nodata))
+		if (!((status & STA_BSY) || (status & STA_DRQ)))
 		{
 			break;
 		}
-		if(tmr->get_ticks()-ctr>200) // 200ms
+		if(tmr->get_ticks()-ctr>500) // 200ms
 			return false;
 	}
 	return true;
@@ -444,33 +444,37 @@ bool ata_identify(IDEdrive *drv)
 		return false;
 	return true;
 }
-/*#define BPERL 16
-void dump(void *data_p, unsigned count)
+bool ata_read_sector(unsigned short port,unsigned int lba, unsigned char *buffer)
 {
-	unsigned char *data = (unsigned char *)data_p;
-	unsigned i, j;
-
-	while(count != 0)
+	unsigned char head,lo,mid,hi,tmp;
+	int i=0;
+	if(!pio_wait_ready(port,true))
 	{
-		for(i = 0; i < BPERL; i++)
-		{
-			if(count == 0)
-				break;
-			kprintf("%x ",data[i]);
-			count--;
-		}
-		kprintf("\t");
-		for(j = 0; j < i; j++)
-		{
-			if(data[j] < ' ')
-				kprintf(".");
-			else
-				kprintf("%x",data[j]);
-		}
-		kprintf("\n");
-		data += BPERL;
+		cout<<"WARNING: time lapsed!!! but device is not ready!!!\n";
+		return false;
 	}
-}*/
+	outportb(port+ERR_REG,0);
+	head=lba>>24;
+	head=head&0x0f;
+	hi=lba>>16;
+	hi=hi&0xff;
+	mid=lba>>8;
+	mid &=0xff;
+	lo=lba&0xff;
+	outportb(port+LBA_LOW_REG,lo);
+	outportb(port+LBA_MID_REG,mid);
+	outportb(port+LBA_HI_REG,hi);
+	outportb(port+SECT_CNT_REG,1);
+	outportb(port+DRV_HD_REG,head);
+	outportb(port+CMD_REG,ATA_CMD_READ);
+	if(!pio_wait_ready(port,true))
+	{
+		cout<<"WARNING: time lapsed!!! but device is not ready!!!\n";
+		return false;
+	}
+	pio_rep_inw(port, (unsigned short *)buffer, 256);
+}
+// bellow 2 functions are utility functions should be moved out
 int MIN ( int a, int b)
 {
 	if(a<b)
@@ -488,14 +492,14 @@ void hex_dump (const unsigned char *data, int len)
 		cout.flags(hex);
 		cout<< pos<<"  ";
 
-		int chunk = MIN (len - pos, 32);
+		int chunk = MIN (len - pos, 20);
 
 		for ( i = 0; i < chunk; ++i)
 		{
 			if (i % 4 == 3)
-				cout<<(unsigned short)data[pos + i]<<" ";
+				cout<<(unsigned short)((unsigned char)data[pos + i])<<" ";
 			else
-				cout<<(unsigned short)data[pos + i];
+				cout<<(unsigned short)((unsigned char)data[pos + i])<<"";
 		}
      // if (chunk < 16)
 	//printf ("%*s", (int) ((16 - chunk) * 2 + (16 - chunk + 3) / 4), "");
@@ -514,8 +518,9 @@ void hex_dump (const unsigned char *data, int len)
 		cout<<'\n';
 		pos += chunk;
 		lin++;
-		if(lin%24==0)
+		if(lin%22==0)
 		{ 
+			cout<<"\nPress Enter";
 			cin>>ans;
 			lin=0;
 		}
@@ -523,36 +528,3 @@ void hex_dump (const unsigned char *data, int len)
 	cout.flags(dec);
 }
 
-// this function will add up the real disks to the disks array
-// this function will call the search_disks() first which will populate the ide_drv[]
-// then it will iterate the arrary and try to fit the different param for the real 
-// device hopefully by issueing a ATA_IDENTIFY command.
-void init_disks()
-{
-	search_disks();
-	for(int i=0;i<4;i++)
-	{
-		if(ide_drv[i]==1)
-		{
-			if(ata_identify(ide_disks[i]))
-			{
-				cout<<"So we got some drive and we think we can\n";
-				cout<<"Process it... Well what next\n";
-				switch(ide_disks[i]->devtyp)
-				{
-					case	PATA:
-							cout<<" do check for partitions\n";
-							cout<<" populate some drive info\n";
-							cout<<" reflect in sysdrive\n";
-							break;
-					case	PATAPI: cout<<" Put it in to sysdrive and\n";
-							cout<<" use a cdfs \n";
-							break;
-					case	SATA:
-					case	SATAPI:
-							cout<<" For the time-being forget it\n";
-				}
-			}
-		}
-	}
-}
