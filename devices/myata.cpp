@@ -1,6 +1,3 @@
-// ata pio driver
-// no DMA no Interrupt
-// for now
 #include "low-io.h"
 #include "idt.h"
 #include "irq.h"
@@ -11,31 +8,43 @@
 #include "ide.h"
 #include "string.h"
 using namespace String;
-//unsigned char buff[4096]; // ATAPI needs a 4096 byte buffer. 
-                            // ATA hd can work with 512 bytes
-channel ctrl_channel[2];
-int ide_drv[4];
-//disk *disks[4]={NULL};//*ide0,*ide1,*ide2,*ide3; //maximum 4 physical disks on 2 IDE controller
 
-IDEdrive *ide_disks[4]={NULL,};
+#define ATA_TIMEOUT 300000             // a large value should be better
 
-
-#define IDENTIFY_TEXT_SWAP(field,size) \
-    \
-    ({ \
-	unsigned char tmp; \
-        \
-        for (int i = 0; i < (size); i+=2) \
-        { \
-	    tmp = (field)[i]; \
-	    (field)[i]   = (field)[i+1]; \
-	    (field)[i+1] = tmp; \
-	} \
-    })
-
-//==============Helper Functions=======================
-//=====================================================
-
+// channel referes to primary or secondary
+// we will populate while discovering
+typedef struct chan
+{
+	unsigned short base_reg;
+	unsigned short ctrl_reg;
+	unsigned short bmide;
+	unsigned char nIEN;
+}chan;
+chan channels[2]={{0,0,0,0},{0,0,0,0}};
+// slots are end devices attached to either master or slave
+typedef struct slot
+{
+	unsigned char ps:1;      // primary 0, secondary 1
+	unsigned char ms:1;      // master =0 slave =1
+	unsigned char exists:1;  // if exists 1 else 0
+	unsigned char devtype:2; // unknown 000, 001 ata, 010 atapi, 011 sata, 100 satapi 
+	unsigned char lba:1;
+	unsigned char dma:1;
+	chan *chanl;              // which channel this drive is connected primary or secondary
+	unsigned short heads;    // number of heads 
+	unsigned short sectors;  // number of sectors 
+	unsigned int cylinders;  // number of cylinders
+	unsigned int capacity;   // total number of sectors
+	unsigned int sectors28;
+	unsigned long long sectors48;
+	unsigned short drv_number; // drive number 0-4
+	struct slot *next;
+}slot;
+// flags if a drive is found 
+unsigned int my_drives[4]={0,0,0,0};
+// here we will store the slot info for further processing
+slot *slots=NULL;  
+//==========================|helper functions|==============================
 // depending on the second parameter sz
 // reads a byte, word or dword from 
 // port
@@ -66,7 +75,7 @@ unsigned char pio_inbyte(unsigned short port)
 {
 	return (unsigned char)pio_inport(port,1);
 }
-// reads a word(2byte) from port and returns it
+// reads a word 2 byts or short int
 unsigned short pio_inword(unsigned short port)
 {
 	return (unsigned short)pio_inport(port,2);
@@ -106,20 +115,17 @@ void pio_rep_indw(unsigned short port, unsigned int *buffer, unsigned int count)
 {
 	insdw(port,buffer,count);
 }
-// stop sending interrupts
-// this should be called after selecting a drive 
-void stop_ata_intr(unsigned short ctrl_port)
+void pio_rep_outb(unsigned short port, unsigned char *buffer, unsigned int count)
 {
-	pio_outbyte(ctrl_port,(0x01<<1));
+	outsb(port, buffer, count);
 }
-// start sending interrupts
-
-// reset the drives on this controller
-// call this if some drive behave insane
-// or in the begining of driver
-void reset_controller(unsigned short ctrl_port)
+void pio_rep_outw(unsigned short port, unsigned short *buffer, unsigned int count)
 {
-	pio_outbyte(ctrl_port,(0x01<<2));
+	outsw(port, buffer, count);
+}
+void pio_rep_outdw(unsigned short port, unsigned int *buffer, unsigned int count)
+{
+	outsdw(port, buffer, count);
 }
 unsigned char pio_get_status(unsigned short port)
 {
@@ -127,40 +133,73 @@ unsigned char pio_get_status(unsigned short port)
 }
 unsigned char pio_get_astatus(unsigned short port)
 {
-	return pio_inbyte(port);
+	return pio_inbyte(port+ALT_ST_REG);
 }
-// this will function will block until the status bit is clear 
-void pio_wait_busy(unsigned short port)
+bool pio_wait_busy(unsigned short port)
 {
 	// should have a delay here !!! guess it will work
 	for(int i=0;i<4;i++)
-		pio_inbyte(port+0x200);
-	while(pio_get_status(port)&STA_BSY);
+		my_timer->sleep(10); 
+	return(pio_get_status(port)&STA_BSY);  // true if busy else false
 }
-bool pio_wait_ready(unsigned short port,bool nodata)
-{
-	TIMER *tmr = TIMER::Instance();
-	unsigned int ctr=tmr->get_ticks();
-	while (true)
-    	{
-		unsigned char status = inportb(port + STATUS_REG);
-		if (!((status & STA_BSY) || (status & STA_DRQ)))
-		{
-			break;
-		}
-		if(tmr->get_ticks()-ctr>500) // 200ms
-			return false;
-	}
-	return true;
-}
-void pio_ata_delay_400ns(unsigned short alt_ctrl_reg)
+
+bool pio_wait_busy_astat(unsigned short port)
 {
 	for(int i=0;i<4;i++)
-		inportb(alt_ctrl_reg);
+		my_timer->sleep(10); 
+	return(pio_get_astatus(port)&STA_BSY);
+}
+// reset the drives on this controller
+// call this if some drive behave insane
+// or in the begining of driver
+bool reset_controller(unsigned short port)
+{
+	pio_outbyte(port + DEV_CTRL_REG,ATA_CTL_SRST);
+	my_timer->sleep(2);
+	pio_outbyte(port + DEV_CTRL_REG,0x0);
+	my_timer->sleep(2);
+	
+	//cout<<"Stopping interrupt of channel\n";
+	pio_outbyte(port + DEV_CTRL_REG,ATA_CTL_nIEN);
+	my_timer->sleep(2);
+	unsigned int timeout=30000;
+	while(pio_wait_busy(port))
+	{
+		timeout--;
+		my_timer->sleep(1);
+	};
+	if(timeout)
+		return true;
+	return false;
+}
+bool is_device_ready(slot *s)
+{
+	return(pio_get_status(s->chanl->base_reg + STATUS_REG)&STA_DRDY);
+}
+bool is_device_busy(slot *s)
+{
+	return(pio_get_status(s->chanl->base_reg + STATUS_REG)&STA_BSY);
+}
+// stop sending interrupts
+// this should be called after selecting a drive 
+void stop_ata_intr(unsigned short ctrl_port)
+{
+	pio_outbyte(ctrl_port,ATA_CTL_nIEN);
 }
 
-//=================================================
-
+#define IDENTIFY_TEXT_SWAP(field,size) \
+    \
+    ({ \
+	unsigned char tmp; \
+        \
+        for (int i = 0; i < (size); i+=2) \
+        { \
+	    tmp = (field)[i]; \
+	    (field)[i]   = (field)[i+1]; \
+	    (field)[i+1] = tmp; \
+	} \
+    })
+//===========================================================================
 // this function will check a master drive in a channel
 // return true if found
 // return false if not
@@ -168,7 +207,7 @@ void pio_ata_delay_400ns(unsigned short alt_ctrl_reg)
 bool detect_master(unsigned short port)
 {
 	int tmp;
-	outportb(port + DRV_HD_REG, 0x40|MASTER);	// Set drive
+	outportb(port + DRV_HD_REG, 0xA0|(MASTER<<4));	// Set drive
 	pio_wait_busy(port);	
 	tmp = inportb(port+STATUS_REG);	// Read status
 	if (tmp & STA_DRDY)
@@ -176,67 +215,27 @@ bool detect_master(unsigned short port)
 	else
 		return false;
 }
+
 bool detect_slave(unsigned short port)
 {
 	int tmp;
-	outportb(port + DRV_HD_REG, 0x40|SLAVE);	// Set drive
+	outportb(port + DRV_HD_REG, 0xB0|(SLAVE<<4));	// Set drive
 	pio_wait_busy(port);	
 	tmp = inportb(port+STATUS_REG);	// Read status
 	if (tmp & STA_DRDY)
-		return 1;
-	else
-		return 0;
-}
-// checks if a ATA controller is present or not
-// really not needed if we have a PCI system and we detected the the PCI-IDE controller
-bool detect_cntrlr(unsigned short port)
-{
-	unsigned char temp1,temp2,stat,timeout=255;
-	TIMER *tmr=TIMER::Instance();
-	outportb(port+LBA_LOW_REG,0x55);
-	outportb(port+LBA_MID_REG,0xAA);
-	temp1=inportb(port+LBA_LOW_REG);
-	temp2=inportb(port+LBA_MID_REG);
-	if((temp1==0x55)&&(temp2==0xAA))
-	{
-		outportb(port+DEV_CTRL_REG,0x06);	//soft reset ????	
-		my_timer->sleep(1);
-		outportb(port + DEV_CTRL_REG, 0x00);
-		tmr->sleep(1);
-		//while (!(inportb(port+STATUS_REG) & STA_DRDY));
-		//qemu needs bellow vvvv		
-		while(timeout)
-		{
-			stat=ata_read_status(port);
-			if(!stat) return true;
-			if(stat & ((STA_DRDY|STA_BSY)==STA_DRDY)) return true;
-			stat=ata_read_alt_status(port);
-			if(!stat) return true;
-			if(stat & ((STA_DRDY|STA_BSY)==STA_DRDY)) return true;
-			timeout--;
-			tmr->sleep(1);
-		}
-		//qemu needs ^^^^
-		//bochs needs this vvvv
-		while (!(inportb(port+STATUS_REG) & STA_DRDY));
 		return true;
-		//bochs needs ^^^^
-	}
-	//else
+	else
 		return false;
 }
-// this function will search number of IDE devices connected to the system
-// this will check for pci-ide controller
-// if it doesn't have a PCI device then it will revert back to standard ide ports
-// search for the controllers existance
-// if a controller found then it will check for master device and slave device
-// depending on which devices found it put a 1 in ide_drv array
+void identify_slots();
 void search_disks()
 {
-	pci_bus *pb=pci_bus::Instance();
-	pci_dev *dev;
+
 	unsigned int cmdbase_pri=ATA_BASE_PRI,cmdbase_sec=ATA_BASE_SEC;
-	unsigned int ctrlbase_pri,ctrlbase_sec,bmidebase,bmidebase_pri,bmidebase_sec;	
+	unsigned int ctrlbase_pri,ctrlbase_sec,bmidebase,bmidebase_pri,bmidebase_sec;
+	pci_bus *pb=pci_bus::Instance();
+	pci_dev *dev=NULL;
+	cout.flags(hex|showbase);
 	cout<<"Initializing IDE harddisks\n";	
 	cout<<"Checking PCI bus for IDE \n";
 	dev=pb->get_dev((unsigned char) 0x01,(unsigned char)0x01);
@@ -245,9 +244,10 @@ void search_disks()
 		cout<<"WARNING: No support for more than one one IDE card\n";
 		cout<<"Default is the first card detected\n";
 		cout<<"On this machine "<<dev->bus<<":"<<dev->dev<<":"<<dev->func<<"\n";
-	} 
+	}
 	if(dev!=NULL)
 	{
+		
 		cout<<vendor_to_string(dev->common->vendor_id) \
                 <<vendor_device_to_string(dev->common->vendor_id,dev->common->device_id) \
 		<<" Present on bus="<<dev->bus<<":"<<dev->dev<<":"<<dev->func \
@@ -268,17 +268,17 @@ void search_disks()
 			ctrlbase_pri &= 0xfffe;
 			if(cmdbase_pri==0)
 			{
-				cout<<"device doesn't provide specific reg for primary ...defaulting\n";
+				cout<<"Device doesn't provide specific reg for primary ...defaulting\n";
 				cmdbase_pri=ATA_BASE_PRI;
-				ctrlbase_pri=0x3f0;
+				ctrlbase_pri=cmdbase_pri + DEV_CTRL_REG;
 			}
 			else
 				ctrlbase_pri -=4;
 			bmidebase_pri=bmidebase;
-			ctrl_channel[0].base_reg = cmdbase_pri;
-			ctrl_channel[0].ctrl_reg = ctrlbase_pri;
-			ctrl_channel[0].bmide  =   bmidebase_pri;
-			ctrl_channel[0].nIEN =     0;
+			channels[0].base_reg = cmdbase_pri;
+			channels[0].ctrl_reg = ctrlbase_pri;
+			channels[0].bmide  =   bmidebase_pri;
+			channels[0].nIEN =     0;
 		}
 		if(cmdbase_sec==0xffff || ctrlbase_sec==0xffff || bmidebase==0xffff)
 		{
@@ -290,191 +290,131 @@ void search_disks()
 			ctrlbase_sec &= 0xfffe;
 			if(cmdbase_sec==0)
 			{
-				cout<<"doesn't provide reg for secondary... defaulting\n";
+				cout<<"Device doesn't provide specific reg for secondary... defaulting\n";
 				cmdbase_sec=ATA_BASE_SEC;
-				ctrlbase_sec=0x370;
+				ctrlbase_sec=cmdbase_sec + DEV_CTRL_REG;
 			}
 			else
 				ctrlbase_sec -=4;
 			bmidebase_sec =bmidebase+8;
-			ctrl_channel[1].base_reg = cmdbase_sec;
-			ctrl_channel[1].ctrl_reg = ctrlbase_sec;
-			ctrl_channel[1].bmide  =   bmidebase_sec;
-			ctrl_channel[1].nIEN =     0;
+			channels[1].base_reg = cmdbase_sec;
+			channels[1].ctrl_reg = ctrlbase_sec;
+			channels[1].bmide  =   bmidebase_sec;
+			channels[1].nIEN =     0;
 		}
 	}
 	else
 	{
 		cout<<"No PCI IDE found\n";
 		cout<<"Using Default IDE ports\n";
-		ctrl_channel[0].base_reg=ATA_BASE_PRI;
-		ctrl_channel[0].ctrl_reg=0x3F0;
-		ctrl_channel[0].bmide=-1;
-		ctrl_channel[0].nIEN=0;
-		ctrl_channel[1].base_reg=ATA_BASE_SEC;
-		ctrl_channel[0].ctrl_reg=0x370;
-		ctrl_channel[0].bmide=0;
-		ctrl_channel[1].nIEN=0;
+		channels[0].base_reg=ATA_BASE_PRI;
+		channels[0].ctrl_reg=0x3F6;
+		channels[0].bmide=-1;
+		channels[0].nIEN=0;
+		channels[1].base_reg=ATA_BASE_SEC;
+		channels[1].ctrl_reg=0x376;
+		channels[1].bmide=0;
+		channels[1].nIEN=0;
 	}
-		
-	//detect primary first
-	int j=0;
-	for(int i=0;i<2;i++)
+	cout<<"Details of channels found\n";
+	for(int k=0;k<2;k++)
 	{
-		if(detect_cntrlr(ctrl_channel[i].base_reg))
+		cout<<"  "<<k<<" base = "<<channels[k].base_reg<<" ctrl = "<<channels[k].ctrl_reg<<" bmide = " \
+		<<channels[k].bmide<<" nIEN = "<<(short)channels[k].nIEN<<"\n";
+	}
+	cout<<"Reseting controllers\n";
+	if(!reset_controller(channels[0].base_reg))
+		cout<<"can't reset channel 0\n";
+	if(!reset_controller(channels[1].base_reg))
+		cout<<"can't reset channel 1\n";
+		
+	for(int c=0,s=0;c<2;c++)
+	{
+		if(detect_master(channels[c].base_reg))
+			my_drives[s]=1;
+		s++;
+		if(detect_slave(channels[c].base_reg))
+			my_drives[s]=1;
+		s++;
+	}
+	slot *temp=NULL;
+	for(int k=0;k<4;k++)
+	{	// for every entry in my_drives we will create a linklist of drives
+		cout<<" Found drives ";
+		if(my_drives[k]==1)
 		{
-			if(i==0)
-				cout<<"Primary Controller found at ";
+		 	cout<<k<<" ";
+			temp = new slot;
+			if(!temp)
+			{
+				cout<<"Insufficient Memory for slot information\n";
+				while(1);
+			}
+			memset(temp,'\0',sizeof(slot));
+			temp->chanl = new chan;
+			memset(temp->chanl,'\0',sizeof(chan));
 			
+			temp->exists = 1;
+			temp->drv_number = k;
+			temp->next=NULL;
+			if(k%2)
+				// slave device
+				temp->ms = 1;
 			else
-				cout<<"Secondary controller found at ";
-			cout.flags(hex|showbase);
-			cout<<ctrl_channel[i].base_reg<<"\n";
-			cout.flags(dec);
-			if(detect_master(ctrl_channel[i].base_reg))
+				// master device
+				temp->ms = 0;
+			if(k<2)
 			{
-				ide_drv[j]=1;
-				j++;
-				cout<<" Master found("<<j<<") ";
+				// primary channel
+				//memcpy(temp->chanl,(chan *)&channels[0],sizeof(chan));
+				temp->chanl->base_reg = channels[0].base_reg;
+				temp->chanl->ctrl_reg = channels[0].ctrl_reg;
+				temp->chanl->bmide = channels[0].bmide;
+				temp->chanl->nIEN  = channels[0].nIEN;
+				temp->ps = 0;
 			}
-			if(detect_slave(ctrl_channel[i].base_reg))
+			else
 			{
-				ide_drv[j]=1;
-				j++;
-				cout<<" Slave found("<<j<<") ";
+				// secondary channel
+				//memcpy(temp->chanl,(chan *)&channels[1],sizeof(chan));
+				temp->chanl->base_reg = channels[1].base_reg;
+				temp->chanl->ctrl_reg = channels[1].ctrl_reg;
+				temp->chanl->bmide    = channels[1].bmide;
+				temp->chanl->nIEN     = channels[1].nIEN;
+				temp->ps = 1;
 			}
-			cout<<"\n";
+			if(slots==NULL)
+				slots = temp;
+			else
+				slots->next = temp;
 		}	
 	}
-	for(int i=0;i<4;i++)
-	{
-		if(ide_drv[i]==1)
-		{
-			ide_disks[i]=new IDEdrive;
-			if(i<2)
-				ide_disks[i]->chan=&ctrl_channel[0]; //primary
-			else
-				ide_disks[i]->chan=&ctrl_channel[1]; // secondary
-			if(i%2)
-				ide_disks[i]->devnum=1; //slave
-			else
-				ide_disks[i]->devnum=0; // master
-		}
-	}
+	cout<<"\n";		
 	cout.flags(dec);
+	reset_controller(channels[0].base_reg);
+	reset_controller(channels[1].base_reg);
+	cout<<"Stopping interrupt of primary channel\n";
+	pio_outbyte(channels[0].ctrl_reg,0x02); // set nIEN in control register so that the selected drive will not send any interrupt
+				// until it is cleared
+	cout<<"Stopping interrupt of secondary channel\n";
+	pio_outbyte(channels[1].ctrl_reg,0x02);
+		
 }
-bool ata_identify(IDEdrive *drv)
+void select_device(slot *s)
 {
-	unsigned char temp1, temp2, id_cmd=0, buf[512], swap_chars;
-	unsigned short ioadr, temp, id_delay;
-	identify_data *dat;
-	outportb(drv->chan->base_reg + DRV_HD_REG, 0x40|(drv->devnum ? SLAVE:MASTER));//select device
-	temp1=inportb(drv->chan->base_reg+ SECT_CNT_REG);
-	temp2=inportb(drv->chan->base_reg+ LBA_LOW_REG);
-	if(temp1 != 0x01 || temp2 != 0x01)
-	{
-		cout<<"no drive on interface "<<drv->chan->base_reg;
-		return false;
-	}
-	temp1 = inportb(drv->chan->base_reg + LBA_MID_REG);
-	temp2 = inportb(drv->chan->base_reg + LBA_HI_REG);
-	temp = inportb(drv->chan->base_reg + STATUS_REG);
-	if(temp1 == 0x14 && temp2 == 0xEB)
-	{
-		cout<<"PATAPI CD \n";
-		drv->devtyp=PATAPI;
-		id_cmd=ATA_CMD_PID; // ATAPI identify
-	}
-	else if(temp1 == 0x69 && temp2 == 0x96)
-	{
-		cout<<"SATAPI CD forget it!!!\n";
-		drv->devtyp=SATAPI;
-		id_cmd=ATA_CMD_PID; // we don't know how to handle it
-	}
-	else if(temp1 == 0 && temp2 == 0 && temp != 0)
-	{
-		cout<<"PATA drive\n";
-		drv->devtyp=PATA;
-		id_cmd=ATA_CMD_ID; // ATA Identify
-	}
-	else if(temp1==0x3c && temp2 == 0xc3 && temp != 0)
-	{
-		cout<<"SATA drive, ";
-		drv->devtyp=SATA;
-		id_cmd=0; // we don't know how to handle it
-	}
+	unsigned short port;
+	unsigned char val=0;
+	port = s->chanl->base_reg + DRV_HD_REG;
+	if(s->ms)
+		val = 0xB0 | (s->ms << 4);
 	else
-	{
-		cout<<"Unknown Drive type\n";
-	}
-	outportb(drv->chan->base_reg  + CMD_REG, id_cmd); // ATA_CMD_ID
-	pio_ata_delay_400ns(drv->chan->ctrl_reg);
-	if(!pio_wait_ready(drv->chan->base_reg,true))
-	{
-		cout<<"WARNING: time lapsed!!! but device is not ready!!!\n";
-		return false;
-	}
-	if(id_cmd)
-	{
-		// read 256 shorts
-		pio_rep_inw(drv->chan->base_reg,(unsigned short*)buf,256);
-		dat=(identify_data *)buf;
-		IDENTIFY_TEXT_SWAP(dat->serial,20);
-		IDENTIFY_TEXT_SWAP(dat->firmware,8);
-		IDENTIFY_TEXT_SWAP(dat->model,40);
-		strcpy((char *)drv->model_name,(const char*)dat->model);
-		strcpy((char *)drv->serial,(const char*)dat->serial);
-		strcpy((char *)drv->firmware,(const char*)dat->firmware);
-		if((buf[99] & 1) != 0)
-		{
-			cout<<"DMA, ";
-			drv->dma = 1;
-			drv->use_dma=0; // We are Idiots/Lazy so we don't do DMA
-		}
-		if((buf[99] & 2) != 0)
-		{
-			cout<<"LBA, ";
-			drv->lba = 1;
-			drv->use_lba=1; // use lba 
-		}
-		cout<<drv->model_name<<" "<<drv->firmware<<" "<<drv->serial<<"\n";
-		hex_dump((unsigned char *)buf,20);
-	}
-	if(id_cmd==0) 
-		return false;
-	return true;
+		val = 0xA0 | (s->ms << 4);
+	pio_outbyte(port,val);
+	//pio_wait_busy(s->chanl->base_reg);
 }
-bool ata_read_sector(unsigned short port,unsigned int lba, unsigned char *buffer)
-{
-	unsigned char head,lo,mid,hi,tmp;
-	int i=0;
-	if(!pio_wait_ready(port,true))
-	{
-		cout<<"WARNING: time lapsed!!! but device is not ready!!!\n";
-		return false;
-	}
-	outportb(port+ERR_REG,0);
-	head=lba>>24;
-	head=head&0x0f;
-	hi=lba>>16;
-	hi=hi&0xff;
-	mid=lba>>8;
-	mid &=0xff;
-	lo=lba&0xff;
-	outportb(port+LBA_LOW_REG,lo);
-	outportb(port+LBA_MID_REG,mid);
-	outportb(port+LBA_HI_REG,hi);
-	outportb(port+SECT_CNT_REG,1);
-	outportb(port+DRV_HD_REG,head);
-	outportb(port+CMD_REG,ATA_CMD_READ);
-	if(!pio_wait_ready(port,true))
-	{
-		cout<<"WARNING: time lapsed!!! but device is not ready!!!\n";
-		return false;
-	}
-	pio_rep_inw(port, (unsigned short *)buffer, 256);
-}
-// bellow 2 functions are utility functions should be moved out
+
+
+
 int MIN ( int a, int b)
 {
 	if(a<b)
@@ -492,14 +432,14 @@ void hex_dump (const unsigned char *data, int len)
 		cout.flags(hex);
 		cout<< pos<<"  ";
 
-		int chunk = MIN (len - pos, 20);
+		int chunk = MIN (len - pos, 16);
 
 		for ( i = 0; i < chunk; ++i)
 		{
-			if (i % 4 == 3)
-				cout<<(unsigned short)((unsigned char)data[pos + i])<<" ";
+			if (i % 2 == 1)
+				cout<<(unsigned short)data[pos + i]<<" ";
 			else
-				cout<<(unsigned short)((unsigned char)data[pos + i])<<"";
+				cout<<(unsigned short)data[pos + i];
 		}
      // if (chunk < 16)
 	//printf ("%*s", (int) ((16 - chunk) * 2 + (16 - chunk + 3) / 4), "");
@@ -518,13 +458,306 @@ void hex_dump (const unsigned char *data, int len)
 		cout<<'\n';
 		pos += chunk;
 		lin++;
-		if(lin%22==0)
+		if(lin%24==0)
 		{ 
-			cout<<"\nPress Enter";
 			cin>>ans;
 			lin=0;
 		}
 	}
 	cout.flags(dec);
 }
+unsigned int ata_r_sector(slot *drv,unsigned int block,unsigned short *buf);
+unsigned int ata_w_sector(slot *drv,unsigned int block,unsigned short *buf);
+void read_sector(slot *drv,unsigned int blk,unsigned char *read_buf);
+void browse_slots()
+{
+	slot *temp;
+	temp = slots;
+	unsigned char sector[512]="\0";
+	unsigned char id_cmd=0x00;
+	ata_ident *dat = new ata_ident;
+	memset(dat,'\0',sizeof(ata_ident));
+	cout.flags(hex|showbase);
+	while(temp)
+	{	
+		cout<<"Selecting ::";
+		cout<<(temp->ps ? "Secondary ":"Primary ")<<(temp->ms ? "Slave ":"Master ")<<"drive Number :"<<temp->drv_number<<"\n";
+		select_device(temp);
+		if(is_device_ready(temp))
+		{
+			cout<<"device is ready\n";
+		}
+		else 
+		{
+			cout<<"device is not ready";
+			continue;
+		}
+		pio_outbyte(temp->chanl->base_reg + CMD_REG, ATA_CMD_ID); 
+		// Now if it is pata drive it will put an error flag in flags register
+		if(pio_inbyte(temp->chanl->base_reg + ERR_REG) & STA_ERR)
+		{
+			temp->devtype = PATA;
+			id_cmd=ATA_CMD_ID; // ATA Identify
+		}
+		else
+		{
+			unsigned char temp1;
+			unsigned char temp2;
+			
+			temp1 = inportb(temp->chanl->base_reg + LBA_MID_REG);
+			temp2 = inportb(temp->chanl->base_reg + LBA_HI_REG);
+			
+			if(temp1 == 0x14 && temp2 == 0xEB)
+			{
+				temp->devtype = PATAPI;
+				id_cmd=ATA_CMD_PID; // ATAPI identify
+			}
+			if(temp1 == 0x69 && temp2 == 0x96)
+			{
+				temp->devtype = SATAPI;
+				id_cmd=ATA_CMD_PID; // we don't know how to handle it
+			}
+			if(temp1 == 0 && temp2 == 0 )
+			{
+				temp->devtype = PATA;
+				id_cmd=ATA_CMD_ID; // ATA Identify
+			}
+			if(temp1==0x3c && temp2 == 0xc3 )
+			{
+				temp->devtype = SATA;
+				id_cmd=0; // we don't know how to handle it
+			}
+		}
+		switch(id_cmd)
+		{
+			case ATA_CMD_ID : //we already sent it so we only will read if STA_DRQ status is present
+						pio_outbyte(temp->chanl->base_reg + CMD_REG, ATA_CMD_ID); 
+						if(pio_get_status(temp->chanl->base_reg) & STA_DRQ)
+						{
+							pio_rep_inw(temp->chanl->base_reg,(unsigned short *)dat,256);
+							IDENTIFY_TEXT_SWAP(dat->model,40);
+							temp->sectors28= dat->lba28maxsects;
+							temp->sectors48= dat->lba48maxsects;
+							if((dat->capability & 1<<8) == 1<<8)
+								temp->dma=1;
+							if((dat->capability & 1<<9) == 1<<9)
+								temp->lba=1;
+							cout<< dat->model<<"\n";
+						}
+						break;
+			case ATA_CMD_PID :
+						pio_outbyte(temp->chanl->base_reg + CMD_REG, ATA_CMD_PID);
+							 pio_rep_inw(temp->chanl->base_reg,(unsigned short*)dat,256);
+							 IDENTIFY_TEXT_SWAP(dat->model,40);
+							cout<< dat->model<<"\n";
+						break;
+		}
+	mylabel:
+		temp=temp->next;
+	}
+	cout.flags(dec);
+}
 
+void display_slot_info()
+{
+	slot *temp;
+	temp = slots;
+	while(temp)
+	{
+		cout<<(temp->ps ? "sec ":"pri ")<<(temp->ms ? "slv ":"mst ")<<(temp->devtype ? "SATA(PI)/PATAPI ":"PATA ")<<(temp->lba ? " LBA ":"CHS ") \
+		<<(temp->dma ? "DMA ":"no DMA ")<<temp->heads<<" "<<temp->sectors<<" "<<temp->cylinders<<" lab28sects= "<<temp->sectors28<<" lba48sects= "<<temp->sectors48<<"\n";
+		temp=temp->next;
+	}
+}
+slot *get_device(unsigned short type)
+{
+	slot *temp;
+	temp = slots;
+	if(!temp)
+		return NULL;
+	while(temp)
+	{
+		if(temp->devtype == type)
+			return (temp);
+		temp = temp->next;
+	}
+	cout<<"nodevice of type ="<<type<<" found\n";
+	return NULL;
+}
+int wait_ready(unsigned short port,unsigned int timeout)
+{
+	unsigned char stat;
+	outportb(port+ERR_REG,0);
+	while(timeout)
+	{
+		stat=ata_read_status(port);
+		if(!stat) return 1;
+		if((stat & (STA_DRDY|STA_BSY))==STA_DRDY) return 1;
+		timeout--;
+	}
+	return -1;
+}
+// generic function to read or write a sector
+// drv is the ide drive , block is LBA , direction is read =0 write =1
+
+unsigned int ata_rw_sector(slot *drv,unsigned int block,unsigned short *buf,unsigned char direction) 
+{
+	unsigned char sc, cl, ch, hd, cmd;
+	unsigned int timeout=300000;
+	unsigned short iobase = drv->chanl->base_reg;
+	//iobase = drv->chanl->base_reg;
+	if(drv->sectors28<block)
+		return 0;
+	/* put exclusion thigs here */
+	select_device(drv);
+	/*{
+		cout<<"select drive failed \n";
+		// uninitialize exclusion here
+		return 0;	
+	}*/
+	stop_ata_intr(drv->chanl->ctrl_reg);
+	if (drv->lba) 
+	{
+		sc = block & 0xff;
+		cl = (block >> 8) & 0xff;
+		ch = (block >> 16) & 0xff;
+		hd = (block >> 24) & 0x0f;
+		//if(drv->ms)
+		//	hd |=(1<<4);
+		//if(drv->ps)
+		//	hd |=0xf0;
+	} 
+	else 
+	{
+        /* See http://en.wikipedia.org/wiki/CHS_conversion */
+	        int cyl = block / (drv->heads * drv->sectors);
+	        int tmp = block % (drv->heads * drv->sectors);
+	        sc = tmp % drv->sectors + 1;
+	        cl = cyl & 0xff;
+	        ch = (cyl >> 8) & 0xff;
+	        hd = tmp / drv->sectors;
+	}
+	if(direction == 0)
+	{
+		cmd= ATA_CMD_READ;
+	}
+	else
+	{
+		cmd= ATA_CMD_WRITE;	
+	}
+	pio_outbyte(iobase + FEATURE_REG,0); // ????
+	pio_outbyte(iobase + SECT_CNT_REG, 1); //we want only one sector
+	pio_outbyte(iobase + LBA_LOW_REG, sc);
+	pio_outbyte(iobase + LBA_MID_REG, cl);
+	pio_outbyte(iobase + LBA_HI_REG, ch);
+	pio_outbyte(iobase + DRV_HD_REG, (drv->ms<<4)|hd);//(drv->ms<<4)|0xE0|hd should be passed 
+						//according to http://wiki.osdev.org/ATA_PIO_Mode#28_bit_PIO
+						// but it never works
+	pio_outbyte(iobase + CMD_REG, cmd);
+	/* The host shall wait at least 400 ns before reading the Status register.
+	See PIO data in/out protocol in ATA/ATAPI-4 spec. */
+	TIMER *tmr=TIMER::Instance();
+	tmr->sleep(30);
+/*	while (timeout)	
+	{
+		// wait for busy flag to clear
+		if(!pio_inbyte(iobase + STATUS_REG)& STA_BSY)
+			break;
+		timeout--;
+		tmr->sleep(1);
+	}
+	if(timeout==0)
+	{
+		// put unlock for mutex here
+		cout<<"Time out but device never came back from busy state\n";	
+		return 0;
+	}*/
+	/* Did the device report an error? */
+	if (pio_inbyte(iobase + STATUS_REG) & STA_ERR) 
+	{
+		//put unlock mutex 
+		cout<<"Error in operation\n";
+		return 0;
+	}
+	// we are ok till now
+	// as we habe stopped the interrupt we should poll data
+	/*timeout = 300000;
+	for(; timeout>0; timeout--)
+	{
+		if(pio_inbyte(iobase + STATUS_REG) & STA_DRQ)
+			break;
+	}
+	if(timeout==0)
+	{
+		// put unlock for mutex here
+		cout<<"time out waiting for data request\n";	
+		return 0;
+	}*/
+	// well our request is successfull
+	// now read it to the output buffer
+	while(!(pio_inbyte(iobase + STATUS_REG) & STA_DRQ));
+	if(direction == 0)
+	{
+		//cmd= ATA_CMD_READ;
+		pio_rep_inw(iobase + DATA_REG, buf, 256);
+	}
+	else
+	{
+		//cmd= ATA_CMD_WRITE;
+		pio_rep_outw(iobase + DATA_REG, buf, 256);	
+	}
+	return 1;
+}
+unsigned int ata_r_sector(slot *drv,unsigned int block,unsigned short *buf)
+{
+	return ata_rw_sector(drv, block, buf,0);
+}
+unsigned int ata_w_sector(slot *drv,unsigned int block,unsigned short *buf)
+{
+	return ata_rw_sector(drv, block, buf,1);
+}
+#if 0
+void read_sector(slot *drv,unsigned int blk,unsigned char *read_buf)
+{
+	unsigned short port;	
+	unsigned char head,lo,mid,hi,tmp;	
+	int i=0;
+	port = drv->chanl->base_reg;
+	while(!wait_ready(port,1000));
+	outportb(port+FEATURE_REG,0);
+
+	head=blk>>24;
+	head=head&0x0f;
+	hi=blk>>16;
+	hi=hi&0xff;
+	mid=blk>>8;
+	mid &=0xff;
+	lo=blk&0xff;
+	outportb(port+LBA_LOW_REG,lo);
+	outportb(port+LBA_MID_REG,mid);
+	outportb(port+LBA_HI_REG,hi);
+	outportb(port+SECT_CNT_REG,1);
+	//ata_write_lba(port,blk);
+	outportb(port+DRV_HD_REG,head);
+	//ata_write_head(port,head);
+	outportb(port+CMD_REG,ATA_CMD_READ);
+	//ata_write_cmd(port,0x20);
+	while (!(inportb(port+STATUS_REG) & STA_DRQ));
+	for (i = 0; i < 256; i++)
+	{
+		tmp = inportw(port+DATA_REG);
+		read_buf[i * 2] =  tmp;
+		read_buf[(i*2)+1] = (tmp >> 8);
+	}
+	//read_sect(port,read_buf);
+	//ata_write_cmd(port,0x21);
+}
+#endif
+void init_disks()
+{
+	search_disks();
+	browse_slots();
+	display_slot_info();
+	
+	//identify_slots();
+}

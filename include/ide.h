@@ -43,8 +43,13 @@
 #define ERR_MC		1<<5	//Media Changed
 #define ERR_UNC		1<<6	//Uncorrectable data error
 #define ERR_BBK		1<<7	//Bad Block
+/* Important bits in the device control register.
+   See ATA/ATAPI-4 spec, section 7.9.6 */
+#define ATA_CTL_SRST    0x04
+#define ATA_CTL_nIEN    0x02
 /* ATA command bytes */
 #define	ATA_CMD_READ		0x20	/* read sectors */
+#define	ATA_CMD_WRITE		0x30	/* write sectors */
 #define	ATA_CMD_PKT		0xA0	/* signals ATAPI packet command */
 #define	ATA_CMD_PID		0xA1	/* identify ATAPI device */
 #define	ATA_CMD_READMULT	0xC4	/* read sectors, one interrupt */
@@ -68,7 +73,7 @@
 #define NUM_IO_SPANS	2
 #define	read_le16(X)	*(unsigned short *)(X)
 #define	read_be16(X)	bswap16(*(unsigned short *)(X))
-
+#define read_le32(X)	*(unsigned int *)(X)
 // devtype defines
 #define PATA	0
 #define PATAPI	1
@@ -97,14 +102,14 @@ typedef struct IDEdrive
 	unsigned short	use_dma:1;	// use dma(1) don't use(0)
 	unsigned short	multimode:1;	// has multi mode 
 	unsigned short	use_multimode:1;// use multimode ??
-	unsigned short	has_valid_mbr:1;
-	unsigned short	is_partitioned:1;
 	unsigned short	mult_count;
+	unsigned short  heads;
+	unsigned short  sectors;
+	unsigned short  cylinders;
 	unsigned int	totalsectors;
 	unsigned char	model_name[41];	// 40 char name nullterminated
 	unsigned char   serial[20];
 	unsigned char	firmware[8];
-	unsigned char	mbr[512];
 } __attribute__((packed)) IDEdrive;
 // partition entry in the drive
 typedef struct part_entry
@@ -142,10 +147,33 @@ typedef struct IdentifyData
     unsigned short reserved6[2];
     unsigned short sectorSize;
 } __attribute__((packed)) identify_data;
-
+typedef struct ata_ident
+{
+	unsigned short discard1[10]; // 10 shorts -> 10 
+	unsigned char  slnum[20];   // 10 shorts->20
+	unsigned short discard2[3]; // 3 shorts ->23
+	unsigned char  fw_rev[8];   // 4 shorts ->27
+	unsigned char  model[40];   // 20 shorts->47
+	unsigned short discard3[2]; //  2 shorts->49
+	unsigned int   capability;  //  2       ->51 DMA 8th bit lba 9th bit
+	unsigned short doscard4[9]; //  9       ->60
+	unsigned int   lba28maxsects;// 2       ->62
+	unsigned short discard5[2];  // 2       ->64
+	unsigned short pio_modes_supported; //1 ->65  // 0-7 bits to be checked
+	unsigned short discard6[15]; // 15      ->80 
+	unsigned short major_ata_ver;//  1      ->81
+	unsigned short minor_ata_ver;//  1      ->82
+	unsigned int   cmdset_supported;//2     ->84
+	unsigned short discard7[4];   //   4     ->88
+	unsigned short ultraDMAfetures;// 1     ->89
+	unsigned short discard8[11];   // 11     ->100
+	unsigned long long lba48maxsects;//4    ->104
+	unsigned short discard9[23];//  23      ->127
+	unsigned short discard10[129];//129	->256  
+} __attribute__((packed)) ata_ident;
 bool pio_wait_ready(unsigned short,bool);
 bool ata_identify(IDEdrive *drv);
-/*class disk
+class disk
 {
 	private:
 		IDEdrive *physical;
@@ -198,8 +226,8 @@ bool ata_identify(IDEdrive *drv);
 			//please do a checks.			
 			read_sector(part_table[partn].beg_lba,buf);
 		};
-};*/
-//extern disk *disks[4];
+};
+extern disk *disks[4];
 void init_disks();
 //int ide_select(ide_t *ide);
 bool detect_cntrlr(unsigned short port);

@@ -1,7 +1,0 @@
-OBJS += kernel/multiboot.o \
-	kernel/mutex.o \
-	kernel/task.o \
-	kernel/kheap.o \
-	kernel/kernel.o \
-	kernel/loader.o 
-

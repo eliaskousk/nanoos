@@ -6,11 +6,11 @@ include shell/Makefile
 
 INCLUDE := -I./include 
 CFLAGS  := $(INCLUDE) -Wall -Wextra -nostdlib -nostdinc -nostartfiles -nodefaultlibs -fno-builtin -c -g 
-CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions -fpic -D_DEBUG_
+CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions -fpic 
 
 all: clean $(OBJS)
 	@echo " [LD]        kernel"
-	@ld -T link.ld $(OBJS) -o ./bin/nanos.elf
+	@ld -Map nanos.map -T link.ld $(OBJS) -o ./bin/nanos.elf
 
 .c.o:
 	@echo " [GCC]		"$@
@@ -31,7 +31,8 @@ clean:
 	@rm -f ./bin/nanos.elf
 	@echo "Removing LiveCD if any"
 	@rm -f NanoOs.iso
-	rm -rf iso
+	@echo removing iso folder
+	@rm -rf iso
 
 iso: all
 	mkdir -p iso/boot/grub
@@ -41,7 +42,7 @@ iso: all
 	mkisofs -U -b boot/grub/iso9660_stage1_5 -no-emul-boot \
 		-f -hide boot.catalog -boot-load-size 4 -boot-info-table \
 		-o "nanoos.iso" -V "NanOS LiveCD" \
-		 iso/ 
+		-quiet iso/ 
 iso2: all
 	mkdir -p iso/boot/grub
 	cp ./bin/nanos.elf ./iso/boot
