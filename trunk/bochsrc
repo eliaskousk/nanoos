@@ -7,15 +7,16 @@ romimage: file="/usr/share/bochs/BIOS-bochs-latest"
 #romimage: file="/backup/coreboot/build/coreboot.rom"
 vgaromimage: file="/usr/share/bochs/VGABIOS-lgpl-latest"
 boot: cdrom
-floppy_bootsig_check: disabled=0
-floppya: type=1_44, 1_44="/tmp/nanoos.img", status=inserted
+#floppy_bootsig_check: disabled=0
+#floppya: type=1_44, 1_44="/tmp/nanoos.img", status=inserted
 # no floppyb
 ata0: enabled=1, ioaddr1=0x1f0, ioaddr2=0x3f0, irq=14
-ata0-master: type=disk, mode=flat, translation=auto, path="100mb.img", cylinders=203, heads=16, spt=63, biosdetect=auto, model="Generic 1234"
-ata0-slave: type=cdrom, path="NanoOs.iso", status=inserted, biosdetect=auto, model="Generic 1234"
+ata0-master : type=disk, mode=flat, translation=lba, path="100mb.img", cylinders=203, heads=16, spt=63, biosdetect=auto, model="Generic 1234"
+#ata1-master : type=disk, path="d.img", mode=flat, cylinders=40, heads=16, spt=63
+ata0-slave : type=cdrom, path="NanoOs.iso", status=inserted, biosdetect=auto, translation=auto,model="Generic 1234"
 ata1: enabled=1, ioaddr1=0x170, ioaddr2=0x370, irq=15
-ata2: enabled=0
-ata3: enabled=0
+#ata2: enabled=0
+#ata3: enabled=0
 parport1: enabled=1, file=""
 parport2: enabled=0
 com1: enabled=1, mode=null, dev=""
@@ -30,7 +31,9 @@ vga: extension=vbe
 cpu: count=1, ips=4000000, reset_on_triple_fault=1, ignore_bad_msrs=1
 #cpuid: cpuid_limit_winnt=0, mmx=1, sse=sse2, xapic=1, sep=1, aes=0, xsave=0, movbe=0, 1g_pages=0
 print_timestamps: enabled=0
-# no gdb stub
+#gdb stub
+#gdbstub: enabled=0, port=1234, text_base=0, data_base=0, bss_base=0
+
 port_e9_hack: enabled=0
 text_snapshot_check: enabled=0
 private_colormap: enabled=0
