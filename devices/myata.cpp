@@ -21,6 +21,25 @@ typedef struct chan
 	unsigned char nIEN;
 }chan;
 chan channels[2]={{0,0,0,0},{0,0,0,0}};
+typedef struct partition
+{
+	unsigned char boot_indicator;
+	unsigned char starting_head;
+	unsigned short starting_sec_cyl;
+	//unsigned short starting_cylinder:10;
+	unsigned char  system_id;
+	unsigned char  ending_head;
+	unsigned short ending_sec_cyl;
+	//unsigned short ending_cylinder:10;
+	unsigned int   start_lba;
+	unsigned int   total_sectors;
+} __attribute__((packed)) partition;
+typedef struct mbr
+{
+	unsigned char boot_code[446]; // 436 bytes of boot code + 10 bytes of Uniq ID of disk but all can be used for boot code
+	partition partitions[4];      // 4 partitions
+	unsigned short signature;     // 0x55,0xaa
+} __attribute__((packed)) mbr;      // TOTAL 446+4*16+2=446+64+2=512 bytes
 // slots are end devices attached to either master or slave
 typedef struct slot
 {
@@ -38,8 +57,11 @@ typedef struct slot
 	unsigned int sectors28;
 	unsigned long long sectors48;
 	unsigned short drv_number; // drive number 0-4
+	partition partition_table[4]; // a Partition table has 4 partitions
 	struct slot *next;
 }slot;
+
+
 // flags if a drive is found 
 unsigned int my_drives[4]={0,0,0,0};
 // here we will store the slot info for further processing
@@ -149,16 +171,28 @@ bool pio_wait_busy_astat(unsigned short port)
 		my_timer->sleep(10); 
 	return(pio_get_astatus(port)&STA_BSY);
 }
+
+bool is_device_ready(slot *s)
+{
+	return(pio_inbyte(s->chanl->base_reg + ALT_ST_REG)&STA_DRDY);
+}
+bool is_device_busy(slot *s)
+{
+	return(pio_inbyte(s->chanl->base_reg + ALT_ST_REG)&STA_BSY);
+}
+// stop sending interrupts
+// this should be called after selecting a drive 
+void stop_ata_intr(unsigned short ctrl_port)
+{
+	pio_outbyte(ctrl_port,ATA_CTL_nIEN);
+}
 // reset the drives on this controller
 // call this if some drive behave insane
 // or in the begining of driver
 bool reset_controller(unsigned short port)
 {
-	pio_outbyte(port + DEV_CTRL_REG,ATA_CTL_SRST);
+	pio_outbyte(port + DEV_CTRL_REG,ATA_CTL_SRST|ATA_CTL_nIEN);
 	my_timer->sleep(2);
-	pio_outbyte(port + DEV_CTRL_REG,0x0);
-	my_timer->sleep(2);
-	
 	//cout<<"Stopping interrupt of channel\n";
 	pio_outbyte(port + DEV_CTRL_REG,ATA_CTL_nIEN);
 	my_timer->sleep(2);
@@ -168,23 +202,16 @@ bool reset_controller(unsigned short port)
 		timeout--;
 		my_timer->sleep(1);
 	};
+	if(!timeout)
+		cout<<"Device is in busy state for a long time even after reset\n";
+	unsigned short err=pio_inbyte(port+ERR_REG);
+	if(err)
+	{
+		cout<<"Warning Error flag is "<<err<<" "<<(unsigned short)pio_inbyte(port+ALT_ST_REG)<<"\n";
+	}
 	if(timeout)
 		return true;
 	return false;
-}
-bool is_device_ready(slot *s)
-{
-	return(pio_get_status(s->chanl->base_reg + STATUS_REG)&STA_DRDY);
-}
-bool is_device_busy(slot *s)
-{
-	return(pio_get_status(s->chanl->base_reg + STATUS_REG)&STA_BSY);
-}
-// stop sending interrupts
-// this should be called after selecting a drive 
-void stop_ata_intr(unsigned short ctrl_port)
-{
-	pio_outbyte(ctrl_port,ATA_CTL_nIEN);
 }
 
 #define IDENTIFY_TEXT_SWAP(field,size) \
@@ -207,7 +234,7 @@ void stop_ata_intr(unsigned short ctrl_port)
 bool detect_master(unsigned short port)
 {
 	int tmp;
-	outportb(port + DRV_HD_REG, 0xA0|(MASTER<<4));	// Set drive
+	outportb(port + DRV_HD_REG, 0xA0);	// Set drive
 	pio_wait_busy(port);	
 	tmp = inportb(port+STATUS_REG);	// Read status
 	if (tmp & STA_DRDY)
@@ -219,7 +246,7 @@ bool detect_master(unsigned short port)
 bool detect_slave(unsigned short port)
 {
 	int tmp;
-	outportb(port + DRV_HD_REG, 0xB0|(SLAVE<<4));	// Set drive
+	outportb(port + DRV_HD_REG, 0xB0);	// Set drive
 	pio_wait_busy(port);	
 	tmp = inportb(port+STATUS_REG);	// Read status
 	if (tmp & STA_DRDY)
@@ -327,7 +354,7 @@ void search_disks()
 		cout<<"can't reset channel 0\n";
 	if(!reset_controller(channels[1].base_reg))
 		cout<<"can't reset channel 1\n";
-		
+	
 	for(int c=0,s=0;c<2;c++)
 	{
 		if(detect_master(channels[c].base_reg))
@@ -366,7 +393,6 @@ void search_disks()
 			if(k<2)
 			{
 				// primary channel
-				//memcpy(temp->chanl,(chan *)&channels[0],sizeof(chan));
 				temp->chanl->base_reg = channels[0].base_reg;
 				temp->chanl->ctrl_reg = channels[0].ctrl_reg;
 				temp->chanl->bmide = channels[0].bmide;
@@ -376,7 +402,6 @@ void search_disks()
 			else
 			{
 				// secondary channel
-				//memcpy(temp->chanl,(chan *)&channels[1],sizeof(chan));
 				temp->chanl->base_reg = channels[1].base_reg;
 				temp->chanl->ctrl_reg = channels[1].ctrl_reg;
 				temp->chanl->bmide    = channels[1].bmide;
@@ -390,15 +415,7 @@ void search_disks()
 		}	
 	}
 	cout<<"\n";		
-	cout.flags(dec);
-	reset_controller(channels[0].base_reg);
-	reset_controller(channels[1].base_reg);
-	cout<<"Stopping interrupt of primary channel\n";
-	pio_outbyte(channels[0].ctrl_reg,0x02); // set nIEN in control register so that the selected drive will not send any interrupt
-				// until it is cleared
-	cout<<"Stopping interrupt of secondary channel\n";
-	pio_outbyte(channels[1].ctrl_reg,0x02);
-		
+	cout.flags(dec);		
 }
 void select_device(slot *s)
 {
@@ -406,11 +423,10 @@ void select_device(slot *s)
 	unsigned char val=0;
 	port = s->chanl->base_reg + DRV_HD_REG;
 	if(s->ms)
-		val = 0xB0 | (s->ms << 4);
+		val = 0xB0 ;
 	else
-		val = 0xA0 | (s->ms << 4);
+		val = 0xA0 ;
 	pio_outbyte(port,val);
-	//pio_wait_busy(s->chanl->base_reg);
 }
 
 
@@ -441,9 +457,6 @@ void hex_dump (const unsigned char *data, int len)
 			else
 				cout<<(unsigned short)data[pos + i];
 		}
-     // if (chunk < 16)
-	//printf ("%*s", (int) ((16 - chunk) * 2 + (16 - chunk + 3) / 4), "");
-	
 		for ( i = 0;(unsigned int) i < chunk; ++i)
 		{
 			cout.flags(dec);
@@ -452,9 +465,7 @@ void hex_dump (const unsigned char *data, int len)
 				cout<<'.';
 			else
 				cout<<b;
-	  //printf ("%c", isprint (b) ? b : '.');
 		}
-
 		cout<<'\n';
 		pos += chunk;
 		lin++;
@@ -473,10 +484,15 @@ void browse_slots()
 {
 	slot *temp;
 	temp = slots;
-	unsigned char sector[512]="\0";
+	
 	unsigned char id_cmd=0x00;
 	ata_ident *dat = new ata_ident;
 	memset(dat,'\0',sizeof(ata_ident));
+	while(is_device_busy(temp))
+	{
+		cout<<"device is busy!!! sleeping\n";
+		my_timer->sleep(300);
+	};
 	cout.flags(hex|showbase);
 	while(temp)
 	{	
@@ -489,9 +505,11 @@ void browse_slots()
 		}
 		else 
 		{
-			cout<<"device is not ready";
+			cout<<"device is not ready\n";
 			continue;
 		}
+		if(is_device_busy(temp))
+			cout<<"device is Busy\n";
 		pio_outbyte(temp->chanl->base_reg + CMD_REG, ATA_CMD_ID); 
 		// Now if it is pata drive it will put an error flag in flags register
 		if(pio_inbyte(temp->chanl->base_reg + ERR_REG) & STA_ERR)
@@ -531,11 +549,14 @@ void browse_slots()
 		switch(id_cmd)
 		{
 			case ATA_CMD_ID : //we already sent it so we only will read if STA_DRQ status is present
-						pio_outbyte(temp->chanl->base_reg + CMD_REG, ATA_CMD_ID); 
+						//pio_outbyte(temp->chanl->base_reg + CMD_REG, ATA_CMD_ID); 
 						if(pio_get_status(temp->chanl->base_reg) & STA_DRQ)
 						{
 							pio_rep_inw(temp->chanl->base_reg,(unsigned short *)dat,256);
 							IDENTIFY_TEXT_SWAP(dat->model,40);
+							temp->heads = dat->discard1[6];
+							temp->sectors = dat->discard1[3];
+							temp->cylinders = dat->discard1[1];
 							temp->sectors28= dat->lba28maxsects;
 							temp->sectors48= dat->lba48maxsects;
 							if((dat->capability & 1<<8) == 1<<8)
@@ -543,6 +564,17 @@ void browse_slots()
 							if((dat->capability & 1<<9) == 1<<9)
 								temp->lba=1;
 							cout<< dat->model<<"\n";
+							// here read the MBR then extract the partition table
+							mbr *tmbr = new mbr;
+							if(!ata_r_sector(temp,0,(unsigned short *)tmbr))
+								cout<<"Error reading MBR";
+							else
+							{
+								//for the timebeing we are only intersted in partition table
+								// copy it
+								memcpy(temp->partition_table,tmbr->partitions,4*sizeof(partition)); 
+							}
+							delete tmbr; // so now free the allocated space.
 						}
 						break;
 			case ATA_CMD_PID :
@@ -550,12 +582,14 @@ void browse_slots()
 							 pio_rep_inw(temp->chanl->base_reg,(unsigned short*)dat,256);
 							 IDENTIFY_TEXT_SWAP(dat->model,40);
 							cout<< dat->model<<"\n";
+							
 						break;
 		}
 	mylabel:
 		temp=temp->next;
 	}
 	cout.flags(dec);
+	delete dat;
 }
 
 void display_slot_info()
@@ -564,8 +598,40 @@ void display_slot_info()
 	temp = slots;
 	while(temp)
 	{
-		cout<<(temp->ps ? "sec ":"pri ")<<(temp->ms ? "slv ":"mst ")<<(temp->devtype ? "SATA(PI)/PATAPI ":"PATA ")<<(temp->lba ? " LBA ":"CHS ") \
-		<<(temp->dma ? "DMA ":"no DMA ")<<temp->heads<<" "<<temp->sectors<<" "<<temp->cylinders<<" lab28sects= "<<temp->sectors28<<" lba48sects= "<<temp->sectors48<<"\n";
+		cout<<(temp->ps ? "sec ":"pri ")<<(temp->ms ? "slv ":"mst ")<<(temp->devtype ? "SATA(PI)/PATAPI ":"PATA ") \
+		<<(temp->lba ? " LBA ":"CHS ")<<(temp->dma ? "DMA ":"no DMA ")<<temp->heads<<" "<<temp->sectors<<" " \
+		<<temp->cylinders<<" lab28sects= "<<temp->sectors28<<" lba48sects= "<<temp->sectors48<<"\n";
+		if(temp->devtype)
+		goto ml;
+		if(temp->partition_table)
+		{
+			// show the partition s with infos
+			for(int p=0;p<4;p++)
+			{
+				unsigned short shd=0,ssc=0,scy=0,ehd=0,esc=0,ecy=0, cyl_hi=0;
+				shd = temp->partition_table[p].starting_head;
+				ssc = temp->partition_table[p].starting_sec_cyl & 0x003F;
+				scy = temp->partition_table[p].starting_sec_cyl;
+				scy >>=6;   // 10 bits remain  the lower 2 bits are actually spill over of higher 2 bits of 10 bit
+				cyl_hi= scy & 0x0003; // higher 2bits of cylinder
+				scy >>=2;        // only lower 8 bits
+				scy = scy | (cyl_hi<<8) ; // covert the cylinder back to normal by putting higher 2bits
+				ehd = temp->partition_table[p].ending_head;
+				esc = temp->partition_table[p].ending_sec_cyl & 0x003F;
+				ecy = temp->partition_table[p].ending_sec_cyl;
+				ecy >>=6;
+				cyl_hi = scy & 0x0003;
+				ecy >>=2;
+				ecy = ecy | (cyl_hi<<8);
+				cout<<"    p->"<<p+1<<((temp->partition_table[p].boot_indicator == 0x80)?"A ":"  ") \
+				<<shd<<" "<<ssc<<" "<<scy<<" "<<ehd<<" "<<esc<<" "<<ecy<<" ";
+				cout<<temp->partition_table[p].start_lba<<" "<<temp->partition_table[p].total_sectors<<" ";
+				cout.flags(hex|showbase);
+				cout<<(int)temp->partition_table[p].system_id<<"\n";
+				cout.flags(dec);
+			}
+		}
+	ml:
 		temp=temp->next;
 	}
 }
@@ -609,13 +675,13 @@ unsigned int ata_rw_sector(slot *drv,unsigned int block,unsigned short *buf,unsi
 	if(drv->sectors28<block)
 		return 0;
 	/* put exclusion thigs here */
-	select_device(drv);
+	//select_device(drv);
 	/*{
 		cout<<"select drive failed \n";
 		// uninitialize exclusion here
 		return 0;	
 	}*/
-	stop_ata_intr(drv->chanl->ctrl_reg);
+	//stop_ata_intr(drv->chanl->ctrl_reg);
 	if (drv->lba) 
 	{
 		sc = block & 0xff;
@@ -627,7 +693,7 @@ unsigned int ata_rw_sector(slot *drv,unsigned int block,unsigned short *buf,unsi
 		//if(drv->ps)
 		//	hd |=0xf0;
 	} 
-	else 
+	//else 
 	{
         /* See http://en.wikipedia.org/wiki/CHS_conversion */
 	        int cyl = block / (drv->heads * drv->sectors);
@@ -658,6 +724,8 @@ unsigned int ata_rw_sector(slot *drv,unsigned int block,unsigned short *buf,unsi
 	See PIO data in/out protocol in ATA/ATAPI-4 spec. */
 	TIMER *tmr=TIMER::Instance();
 	tmr->sleep(30);
+	cout<<" Reading hd= "<<(int)hd<<" sect= "<<(int)sc<<" cyl= "<<(int)cl<<"\n";
+	//while(pio_inbyte(iobase+DATA_REG)==0x08);
 /*	while (timeout)	
 	{
 		// wait for busy flag to clear
@@ -673,7 +741,7 @@ unsigned int ata_rw_sector(slot *drv,unsigned int block,unsigned short *buf,unsi
 		return 0;
 	}*/
 	/* Did the device report an error? */
-	if (pio_inbyte(iobase + STATUS_REG) & STA_ERR) 
+	if (pio_inbyte(iobase + ALT_ST_REG) & STA_ERR) 
 	{
 		//put unlock mutex 
 		cout<<"Error in operation\n";
@@ -695,11 +763,15 @@ unsigned int ata_rw_sector(slot *drv,unsigned int block,unsigned short *buf,unsi
 	}*/
 	// well our request is successfull
 	// now read it to the output buffer
-	while(!(pio_inbyte(iobase + STATUS_REG) & STA_DRQ));
+	while(!(pio_inbyte(iobase + ALT_ST_REG) & STA_DRQ));
 	if(direction == 0)
 	{
 		//cmd= ATA_CMD_READ;
 		pio_rep_inw(iobase + DATA_REG, buf, 256);
+		while(is_device_busy(drv))
+		{
+			my_timer->sleep(30);
+		}
 	}
 	else
 	{
@@ -716,48 +788,22 @@ unsigned int ata_w_sector(slot *drv,unsigned int block,unsigned short *buf)
 {
 	return ata_rw_sector(drv, block, buf,1);
 }
-#if 0
-void read_sector(slot *drv,unsigned int blk,unsigned char *read_buf)
-{
-	unsigned short port;	
-	unsigned char head,lo,mid,hi,tmp;	
-	int i=0;
-	port = drv->chanl->base_reg;
-	while(!wait_ready(port,1000));
-	outportb(port+FEATURE_REG,0);
 
-	head=blk>>24;
-	head=head&0x0f;
-	hi=blk>>16;
-	hi=hi&0xff;
-	mid=blk>>8;
-	mid &=0xff;
-	lo=blk&0xff;
-	outportb(port+LBA_LOW_REG,lo);
-	outportb(port+LBA_MID_REG,mid);
-	outportb(port+LBA_HI_REG,hi);
-	outportb(port+SECT_CNT_REG,1);
-	//ata_write_lba(port,blk);
-	outportb(port+DRV_HD_REG,head);
-	//ata_write_head(port,head);
-	outportb(port+CMD_REG,ATA_CMD_READ);
-	//ata_write_cmd(port,0x20);
-	while (!(inportb(port+STATUS_REG) & STA_DRQ));
-	for (i = 0; i < 256; i++)
-	{
-		tmp = inportw(port+DATA_REG);
-		read_buf[i * 2] =  tmp;
-		read_buf[(i*2)+1] = (tmp >> 8);
-	}
-	//read_sect(port,read_buf);
-	//ata_write_cmd(port,0x21);
-}
-#endif
 void init_disks()
 {
 	search_disks();
 	browse_slots();
 	display_slot_info();
-	
+	char ans[5];
+	cin>>ans;
+	while(strcmp(ans,"yes"));
+	if(slot *temp = get_device(0))
+	{
+		unsigned short *sector = new unsigned short[256];
+		unsigned int stlba = temp->partition_table[1].start_lba;
+		cout<<"Reading "<<stlba<<" \n";
+		if(ata_r_sector(temp,stlba,sector))
+		hex_dump((unsigned char*)sector,512);
+	}
 	//identify_slots();
 }
