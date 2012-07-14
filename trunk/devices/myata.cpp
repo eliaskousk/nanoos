@@ -682,18 +682,19 @@ unsigned int ata_rw_sector(slot *drv,unsigned int block,unsigned short *buf,unsi
 		return 0;	
 	}*/
 	//stop_ata_intr(drv->chanl->ctrl_reg);
-	if (drv->lba) 
+	if (drv->lba)
 	{
 		sc = block & 0xff;
 		cl = (block >> 8) & 0xff;
 		ch = (block >> 16) & 0xff;
 		hd = (block >> 24) & 0x0f;
+		cout<<"LBA "<<sc<<" "<<cl<<" "<<ch<<" "<<hd<<"\n";
 		//if(drv->ms)
 		//	hd |=(1<<4);
 		//if(drv->ps)
 		//	hd |=0xf0;
-	} 
-	//else 
+	}
+	else 
 	{
         /* See http://en.wikipedia.org/wiki/CHS_conversion */
 	        int cyl = block / (drv->heads * drv->sectors);
@@ -716,7 +717,7 @@ unsigned int ata_rw_sector(slot *drv,unsigned int block,unsigned short *buf,unsi
 	pio_outbyte(iobase + LBA_LOW_REG, sc);
 	pio_outbyte(iobase + LBA_MID_REG, cl);
 	pio_outbyte(iobase + LBA_HI_REG, ch);
-	pio_outbyte(iobase + DRV_HD_REG, (drv->ms<<4)|hd);//(drv->ms<<4)|0xE0|hd should be passed 
+	pio_outbyte(iobase + DRV_HD_REG, 0xE0|hd|drv->ms<<4);//(drv->ms<<4)|0xE0|hd should be passed 
 						//according to http://wiki.osdev.org/ATA_PIO_Mode#28_bit_PIO
 						// but it never works
 	pio_outbyte(iobase + CMD_REG, cmd);
@@ -726,20 +727,20 @@ unsigned int ata_rw_sector(slot *drv,unsigned int block,unsigned short *buf,unsi
 	tmr->sleep(30);
 	cout<<" Reading hd= "<<(int)hd<<" sect= "<<(int)sc<<" cyl= "<<(int)cl<<"\n";
 	//while(pio_inbyte(iobase+DATA_REG)==0x08);
-/*	while (timeout)	
+	while (timeout)	
 	{
 		// wait for busy flag to clear
-		if(!pio_inbyte(iobase + STATUS_REG)& STA_BSY)
+		if(!is_device_busy(drv))
 			break;
 		timeout--;
-		tmr->sleep(1);
+		tmr->sleep(10);
 	}
 	if(timeout==0)
 	{
 		// put unlock for mutex here
-		cout<<"Time out but device never came back from busy state\n";	
+		cout<<"Time out but device never came back from busy state\n";
 		return 0;
-	}*/
+	}
 	/* Did the device report an error? */
 	if (pio_inbyte(iobase + ALT_ST_REG) & STA_ERR) 
 	{
@@ -795,15 +796,20 @@ void init_disks()
 	browse_slots();
 	display_slot_info();
 	char ans[5];
-	cin>>ans;
-	while(strcmp(ans,"yes"));
+	
+	
 	if(slot *temp = get_device(0))
 	{
 		unsigned short *sector = new unsigned short[256];
 		unsigned int stlba = temp->partition_table[1].start_lba;
-		cout<<"Reading "<<stlba<<" \n";
-		if(ata_r_sector(temp,stlba,sector))
-		hex_dump((unsigned char*)sector,512);
+		{
+			cout<<"Reading "<<stlba<<" \n";
+			cin>>ans;
+			//while(strcmp(ans,"yes"));
+			if(ata_r_sector(temp,stlba,sector))
+			hex_dump((unsigned char*)sector,512);
+		}
 	}
 	//identify_slots();
 }
+
