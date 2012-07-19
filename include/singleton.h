@@ -1,3 +1,10 @@
+//////////////////////////////////////////////////////////
+// This file is a part of Nanos Copyright (C) 2008, 2012//
+// ashok.s.das@gmail.com        GNU GPL-V2              //
+//////////////////////////////////////////////////////////
+// Singleton header                                     //
+//                                                      //
+//////////////////////////////////////////////////////////
 #ifndef __SINGLETON_H__
 #define __SINGLETON_H__
 #include<OStream.h>
