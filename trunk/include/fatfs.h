@@ -1,13 +1,13 @@
 //////////////////////////////////////////////////////////
-// This file is a part of Nanos Copyright (C) 2008, 2009//
-// ashok.s.das@gmail.com                                //
+// This file is a part of Nanos Copyright (C) 2008, 2012//
+// ashok.s.das@gmail.com        GNU GPL-V2              //
 //////////////////////////////////////////////////////////
 // FATFS16: Prototypes for fat16                        //
 //  todo: put FAT32                                     //
 //////////////////////////////////////////////////////////
 #ifndef __FATFS_H__
 #define __FATFS_H__
-//#include "drive.h"
+#include "mydrive.h"
 
 //begining of boot sector
 typedef struct
@@ -96,27 +96,44 @@ typedef struct
 	unsigned int FileSize;                   /* Size of file must be zero for Directory */
 } __attribute__ ((packed)) direntry;	
 
+//copied from ACE os FAT.h
+#define ATTR_READONLY 	0x01;
+#define ATTR_HIDDEN	0x02;
+#define ATTR_SYSTEM	0x04;
+#define ATTR_VOLUMEID	0x08;
+#define ATTR_DIRECTORY	0x10;
+#define ATTR_ARCHIVE	0x20;
+
 class fat16
 {
 	private:
 		fat_12_16_bs boot_sect;
-		
 		unsigned int FirstFATbegin;
 		unsigned int SecondFATbegin;
 		unsigned int RootDirbegin;
-		unsigned int DataAreaBegin;
+		unsigned int RootDirSectors;
+		unsigned int DataAreabegin;
 		unsigned int TotalDataSectors;
 		unsigned int TotalClusters;
+		unsigned int offset_of_cluster(unsigned int cluster); // from the begining of drive i.e boot sector not MBR
+		class drive *drv;
 	public:
-		void init_fat16(void *buf);
+		void init_fat16(class drive *drv);
 		fat16(){};
 		~fat16(){};
-		void fat_read(); //just a holder
-		void fat_write();//just a holder
-		void fat_read_dir_entry();
-		void fat_write_dir_entry();
+		void fat16_read_cluster(unsigned int cluster, unsigned char *buffer); //just a holder
+		void fat16_write_cluster(unsigned int cluster, unsigned char *buffer);//just a holder
+		void fat16_read_sector(unsigned int sector, unsigned char *buffer); // sector is from begining of partition
+		void fat16_write_sector(unsigned int sector, unsigned char *buffer);//  -- ditto --
+		/*void fat_read_dir_entry();			// these entry most probably not required in the kernel,
+		void fat_write_dir_entry();			// the user space application and/or library should implement them
+		direntry *fat_find_first(char *file_name);
+		direntry *fat_find_next(char *file_name);*/
 		void dump_fat_info();
 		bool valid_fat_fs();
+		void display_root_dir();
 
 };
+
+void display_root_dir();
 #endif //__FATFS_H__

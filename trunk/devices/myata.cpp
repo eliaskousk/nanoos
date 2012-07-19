@@ -1,3 +1,10 @@
+//////////////////////////////////////////////////////////
+// This file is a part of Nanos Copyright (C) 2008, 2009//
+// ashok.s.das@gmail.com                                //
+//////////////////////////////////////////////////////////
+// ATA: implementation                                  //
+//  todo: ATAPI                                         //
+//////////////////////////////////////////////////////////
 #include "low-io.h"
 #include "idt.h"
 #include "irq.h"
@@ -6,60 +13,15 @@
 #include "timer.h"
 #include "pci.h"
 #include "ide.h"
+#include "myata.h"
+#include "mydrive.h"
 #include "string.h"
+#include "utils.h"
+using namespace std;
 using namespace String;
 
-#define ATA_TIMEOUT 300000             // a large value should be better
-
-// channel referes to primary or secondary
-// we will populate while discovering
-typedef struct chan
-{
-	unsigned short base_reg;
-	unsigned short ctrl_reg;
-	unsigned short bmide;
-	unsigned char nIEN;
-}chan;
 chan channels[2]={{0,0,0,0},{0,0,0,0}};
-typedef struct partition
-{
-	unsigned char boot_indicator;
-	unsigned char starting_head;
-	unsigned short starting_sec_cyl;
-	//unsigned short starting_cylinder:10;
-	unsigned char  system_id;
-	unsigned char  ending_head;
-	unsigned short ending_sec_cyl;
-	//unsigned short ending_cylinder:10;
-	unsigned int   start_lba;
-	unsigned int   total_sectors;
-} __attribute__((packed)) partition;
-typedef struct mbr
-{
-	unsigned char boot_code[446]; // 436 bytes of boot code + 10 bytes of Uniq ID of disk but all can be used for boot code
-	partition partitions[4];      // 4 partitions
-	unsigned short signature;     // 0x55,0xaa
-} __attribute__((packed)) mbr;      // TOTAL 446+4*16+2=446+64+2=512 bytes
-// slots are end devices attached to either master or slave
-typedef struct slot
-{
-	unsigned char ps:1;      // primary 0, secondary 1
-	unsigned char ms:1;      // master =0 slave =1
-	unsigned char exists:1;  // if exists 1 else 0
-	unsigned char devtype:2; // unknown 000, 001 ata, 010 atapi, 011 sata, 100 satapi 
-	unsigned char lba:1;
-	unsigned char dma:1;
-	chan *chanl;              // which channel this drive is connected primary or secondary
-	unsigned short heads;    // number of heads 
-	unsigned short sectors;  // number of sectors 
-	unsigned int cylinders;  // number of cylinders
-	unsigned int capacity;   // total number of sectors
-	unsigned int sectors28;
-	unsigned long long sectors48;
-	unsigned short drv_number; // drive number 0-4
-	partition partition_table[4]; // a Partition table has 4 partitions
-	struct slot *next;
-}slot;
+
 
 
 // flags if a drive is found 
@@ -254,7 +216,7 @@ bool detect_slave(unsigned short port)
 	else
 		return false;
 }
-void identify_slots();
+
 void search_disks()
 {
 
@@ -430,56 +392,10 @@ void select_device(slot *s)
 }
 
 
-
-int MIN ( int a, int b)
-{
-	if(a<b)
-		return a;
-	return b;
-}
-void hex_dump (const unsigned char *data, int len)
-{
-        int pos = 0;
-	int i,lin=0;
-	char ans;
-  
-	while (pos < len)
-	{
-		cout.flags(hex);
-		cout<< pos<<"  ";
-
-		int chunk = MIN (len - pos, 16);
-
-		for ( i = 0; i < chunk; ++i)
-		{
-			if (i % 2 == 1)
-				cout<<(unsigned short)data[pos + i]<<" ";
-			else
-				cout<<(unsigned short)data[pos + i];
-		}
-		for ( i = 0;(unsigned int) i < chunk; ++i)
-		{
-			cout.flags(dec);
-			unsigned char b = data[pos + i];
-			if(b<' ')
-				cout<<'.';
-			else
-				cout<<b;
-		}
-		cout<<'\n';
-		pos += chunk;
-		lin++;
-		if(lin%24==0)
-		{ 
-			cin>>ans;
-			lin=0;
-		}
-	}
-	cout.flags(dec);
-}
 unsigned int ata_r_sector(slot *drv,unsigned int block,unsigned short *buf);
 unsigned int ata_w_sector(slot *drv,unsigned int block,unsigned short *buf);
-void read_sector(slot *drv,unsigned int blk,unsigned char *read_buf);
+void display_partition_info(partition *p);
+
 void browse_slots()
 {
 	slot *temp;
@@ -596,6 +512,7 @@ void display_slot_info()
 {
 	slot *temp;
 	temp = slots;
+	cout<<"[Displaying slot infornations]\n";
 	while(temp)
 	{
 		cout<<(temp->ps ? "sec ":"pri ")<<(temp->ms ? "slv ":"mst ")<<(temp->devtype ? "SATA(PI)/PATAPI ":"PATA ") \
@@ -608,27 +525,8 @@ void display_slot_info()
 			// show the partition s with infos
 			for(int p=0;p<4;p++)
 			{
-				unsigned short shd=0,ssc=0,scy=0,ehd=0,esc=0,ecy=0, cyl_hi=0;
-				shd = temp->partition_table[p].starting_head;
-				ssc = temp->partition_table[p].starting_sec_cyl & 0x003F;
-				scy = temp->partition_table[p].starting_sec_cyl;
-				scy >>=6;   // 10 bits remain  the lower 2 bits are actually spill over of higher 2 bits of 10 bit
-				cyl_hi= scy & 0x0003; // higher 2bits of cylinder
-				scy >>=2;        // only lower 8 bits
-				scy = scy | (cyl_hi<<8) ; // covert the cylinder back to normal by putting higher 2bits
-				ehd = temp->partition_table[p].ending_head;
-				esc = temp->partition_table[p].ending_sec_cyl & 0x003F;
-				ecy = temp->partition_table[p].ending_sec_cyl;
-				ecy >>=6;
-				cyl_hi = scy & 0x0003;
-				ecy >>=2;
-				ecy = ecy | (cyl_hi<<8);
-				cout<<"    p->"<<p+1<<((temp->partition_table[p].boot_indicator == 0x80)?"A ":"  ") \
-				<<shd<<" "<<ssc<<" "<<scy<<" "<<ehd<<" "<<esc<<" "<<ecy<<" ";
-				cout<<temp->partition_table[p].start_lba<<" "<<temp->partition_table[p].total_sectors<<" ";
-				cout.flags(hex|showbase);
-				cout<<(int)temp->partition_table[p].system_id<<"\n";
-				cout.flags(dec);
+				cout<<(int)p+1<<" ";
+				display_partition_info(&temp->partition_table[p]);
 			}
 		}
 	ml:
@@ -637,18 +535,28 @@ void display_slot_info()
 }
 slot *get_device(unsigned short type)
 {
-	slot *temp;
+	slot *temp=NULL,*dev1=NULL,*dev=NULL;
 	temp = slots;
 	if(!temp)
 		return NULL;
 	while(temp)
 	{
 		if(temp->devtype == type)
-			return (temp);
+		{
+			if(dev1==NULL)
+			{
+				dev=temp;
+				dev->next=NULL;
+				dev1=dev;
+			}
+			else
+				dev->next=temp;	
+			dev=dev->next;
+		}
 		temp = temp->next;
 	}
-	cout<<"nodevice of type ="<<type<<" found\n";
-	return NULL;
+	//cout<<"nodevice of type ="<<type<<" found\n";
+	return dev1;
 }
 int wait_ready(unsigned short port,unsigned int timeout)
 {
@@ -682,18 +590,17 @@ unsigned int ata_rw_sector(slot *drv,unsigned int block,unsigned short *buf,unsi
 		return 0;	
 	}*/
 	//stop_ata_intr(drv->chanl->ctrl_reg);
-	if (drv->lba)
+	if (drv->lba) 
 	{
 		sc = block & 0xff;
 		cl = (block >> 8) & 0xff;
 		ch = (block >> 16) & 0xff;
 		hd = (block >> 24) & 0x0f;
-		cout<<"LBA "<<sc<<" "<<cl<<" "<<ch<<" "<<hd<<"\n";
 		//if(drv->ms)
 		//	hd |=(1<<4);
 		//if(drv->ps)
 		//	hd |=0xf0;
-	}
+	} 
 	else 
 	{
         /* See http://en.wikipedia.org/wiki/CHS_conversion */
@@ -725,22 +632,22 @@ unsigned int ata_rw_sector(slot *drv,unsigned int block,unsigned short *buf,unsi
 	See PIO data in/out protocol in ATA/ATAPI-4 spec. */
 	TIMER *tmr=TIMER::Instance();
 	tmr->sleep(30);
-	cout<<" Reading hd= "<<(int)hd<<" sect= "<<(int)sc<<" cyl= "<<(int)cl<<"\n";
+	//cout<<" Reading hd= "<<(int)hd<<" sect= "<<(int)sc<<" cyl= "<<(int)cl<<"\n";
 	//while(pio_inbyte(iobase+DATA_REG)==0x08);
-	while (timeout)	
+/*	while (timeout)	
 	{
 		// wait for busy flag to clear
-		if(!is_device_busy(drv))
+		if(!pio_inbyte(iobase + STATUS_REG)& STA_BSY)
 			break;
 		timeout--;
-		tmr->sleep(10);
+		tmr->sleep(1);
 	}
 	if(timeout==0)
 	{
 		// put unlock for mutex here
-		cout<<"Time out but device never came back from busy state\n";
+		cout<<"Time out but device never came back from busy state\n";	
 		return 0;
-	}
+	}*/
 	/* Did the device report an error? */
 	if (pio_inbyte(iobase + ALT_ST_REG) & STA_ERR) 
 	{
@@ -789,27 +696,99 @@ unsigned int ata_w_sector(slot *drv,unsigned int block,unsigned short *buf)
 {
 	return ata_rw_sector(drv, block, buf,1);
 }
+void display_partition_info(partition *p)
+{
+	if(p)
+	{
+		unsigned short shd=0,ssc=0,scy=0,ehd=0,esc=0,ecy=0, cyl_hi=0;
+		shd = p->starting_head;
+		ssc = p->starting_sec_cyl & 0x003F;
+		scy = p->starting_sec_cyl;
+		scy >>=6;   // 10 bits remain  the lower 2 bits are actually spill over of higher 2 bits of 10 bit
+		cyl_hi= scy & 0x0003; // higher 2bits of cylinder
+		scy >>=2;        // only lower 8 bits
+		scy = scy | (cyl_hi<<8) ; // covert the cylinder back to normal by putting higher 2bits
+		ehd = p->ending_head;
+		esc = p->ending_sec_cyl & 0x003F;
+		ecy = p->ending_sec_cyl;
+		ecy >>=6;
+		cyl_hi = scy & 0x0003;
+		ecy >>=2;
+		ecy = ecy | (cyl_hi<<8);
+		cout<<"    "<<((p->boot_indicator == 0x80)?"A ":"  ")<<shd<<" "<<ssc<<" "<<scy<<" "<<ehd<<" "<<esc<<" "<<ecy<<" ";
+		cout<<p->start_lba<<" "<<p->total_sectors<<" ";
+		cout.flags(hex|showbase);
+		cout<<(int)p->system_id<<"\n";
+		cout.flags(dec);	
+	}
+}
+drive *sysdrives[16]; //we are currently suupporting 4 partitions per slot ant 4 slots
+void init_sysdrives()
+{
+	slot *temp=NULL;
+	temp = slots;
+	
+	cout<<"[Initializing System drives ]\n";
+	
+	while(temp)
+	{
+		//cout<<"Found a slot\n";
+		int i=0;
+		if(temp->devtype) // PATA 0
+			goto ml;
+		else
+		{
+			cout<<"found a PATA drive\n";
+			if(temp->partition_table)
+			{
+				// show the partition s with infos
+				for(int p=0;p<4;p++)
+				{
+					if(temp->partition_table[p].total_sectors>0)
+					{
+						//cout<<"found a non zero partition\n";
+						drive *d = new drive(temp, p);
+						sysdrives[i] = d;
+						i++;
+					}
+				}
+			}
+		}
+	ml:
+		temp=temp->next;
+	}
 
+}
+void display_sysdrive_info()
+{
+	char ans[5];
+	for(int i=0;i<16;i++)
+	{
+		if(sysdrives[i]!=NULL)
+		{
+			cout<<" "<<i<<" ";
+			sysdrives[i]->display_info();
+			cin>>ans;
+			sysdrives[i]->fs->dump_fat_info();
+			sysdrives[i]->fs->display_root_dir();
+		}
+	}
+}
 void init_disks()
 {
 	search_disks();
 	browse_slots();
 	display_slot_info();
-	char ans[5];
+	init_sysdrives();
+	display_sysdrive_info();
 	
-	
-	if(slot *temp = get_device(0))
+	/*char ans[5];*/
+	/*if(slot *temp = get_device(0))
 	{
 		unsigned short *sector = new unsigned short[256];
-		unsigned int stlba = temp->partition_table[1].start_lba;
-		{
-			cout<<"Reading "<<stlba<<" \n";
-			cin>>ans;
-			//while(strcmp(ans,"yes"));
-			if(ata_r_sector(temp,stlba,sector))
-			hex_dump((unsigned char*)sector,512);
-		}
-	}
-	//identify_slots();
+		unsigned int stlba = temp->partition_table[0].start_lba;
+		cout<<"Reading "<<stlba<<" \n";
+		if(ata_r_sector(temp,stlba,sector))
+		hex_dump((unsigned char*)sector,512);
+	}*/	
 }
-

@@ -22,6 +22,7 @@
 #include "pci.h"
 //#include "drive.h"
 #include "ide.h"
+#include "mydrive.h"
 
 extern "C" int kmain(unsigned int magic, multibootInfo *mb);
 
@@ -81,8 +82,7 @@ int kmain(unsigned int magic,multibootInfo *mb)
 	enable();
 	cout<<"done\n";
 	init_disks();
-	//init_sys_drv();
-		
+	//init_sysdrives();
 	cout<<"\n"<<"Dumping IRQ routines \n";
 	IRQ::dump_irq_routines();
 	cout<<"\nDone\n";

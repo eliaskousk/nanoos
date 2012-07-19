@@ -48,6 +48,7 @@ iso2: all
 	cp ./bin/nanos.elf ./iso/boot
 	cp grub.cfg ./iso/boot/grub
 	grub2-mkrescue -o NanoOs.iso iso
+
 floppy: all
 		
 	@echo "Mounting floppy image "
@@ -57,4 +58,5 @@ floppy: all
 	@sync
 	@echo "Unmounting Floppy image"
 	@sudo umount /mnt
+	@echo DATE
 

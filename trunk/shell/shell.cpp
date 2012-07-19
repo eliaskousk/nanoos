@@ -11,7 +11,7 @@
 #include "gcpu.h"
 #include "multiboot.h"
 #include "pci.h"
-#include "drive.h"
+#include "mydrive.h"
 extern void display_ide();
 shell::shell()
 {

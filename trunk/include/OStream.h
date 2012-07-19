@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////
-// This file is a part of Nanos Copyright (C) 2008, 2009//
-// ashok.s.das@gmail.com                                //
+// This file is a part of Nanos Copyright (C) 2008, 2012//
+// ashok.s.das@gmail.com         GNU GPL-V2             //
 //////////////////////////////////////////////////////////
 // Ostream header                                       //
 //                                                      //
@@ -9,7 +9,8 @@
 #define __OSTREAM_H__
 
 #include "video.h"
-#include "string.h"//---------------OStream:------------------------
+#include "string.h"
+//---------------OStream:------------------------
 #define boolalpha	0x0001 /* NYI */
 #define showbase	0x0002
 #define showpoint	0x0004 /* NYI */

@@ -1,9 +1,9 @@
-////////////////////////////////////
-// doubly linked list template    //
-// (C) ashok.s.das@gmail.com 2010 //
-// GNU GPL V2 or higher license   //
-// <http://www.gnu.org/licenses/> //
-////////////////////////////////////
+/////////////////////////////////////////
+// doubly linked list template         //
+// (C) ashok.s.das@gmail.com 2010-2012 //
+// GNU GPL V2 or higher license        //
+// <http://www.gnu.org/licenses/>      //
+/////////////////////////////////////////
 
 #ifndef __DLIST_H__
 #define __DLIST_H__
