@@ -17,7 +17,7 @@
   # exit FreeDos
   # boot nano os as "qemu -fda <nanoos fd image> -hda <your hd image name> -boot a"
   # Now play arround
-  # to check IDE issue "hdinfo" on command prompt
+  # to check IDE issue "ide" on command prompt
   # to check if it properly detected FAT16, issue "sysdriveinfo" at command prompt. 
 Add your content here.
 
