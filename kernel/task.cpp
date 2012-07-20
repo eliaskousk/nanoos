@@ -445,10 +445,10 @@ void thread3(unsigned int n)
 		//wait_ms(10);
 	}
 }
-
-void thread4(unsigned int n)
+extern void init_disks();
+void thread4(unsigned int )
 {
-	int x,y;
+	/*int x,y;
 	int z=10,k=100;	
 	//wait_ms(5);
 	//for(;;)
@@ -477,7 +477,7 @@ void thread4(unsigned int n)
 		cout<<"z="<<z<<"\n";
 		cout<<"k="<<k<<"\n";
 		//wait_ms(10);
-	}
+	}*/
 }
 void thread5(unsigned int )
 {
@@ -491,10 +491,10 @@ void init_tasks()
 	task_q=new thread_que();
 	zombie=new thread_que();
 	task_q->add(create_thread(idle,0,IDLE_PRIO,1));
-	task_q->add(create_thread(thread1,(unsigned int )&b,LOW_PRIO,1));
+	//task_q->add(create_thread(thread1,(unsigned int )&b,LOW_PRIO,1));
 	//task_q->add(create_thread(thread2,(unsigned int )&c,LOW_PRIO,1));
 	//task_q->add(create_thread(thread3,(unsigned int )&d,LOW_PRIO,1));
-	task_q->add(create_thread(thread4,(unsigned int )&a,LOW_PRIO,1));
+	//task_q->add(create_thread(thread4,0,HIGH_PRIO,0));
 	task_q->add(create_thread(thread5,0,HIGH_PRIO,1)); //our shell
 	tasker=1;
 	enable();

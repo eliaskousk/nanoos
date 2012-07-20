@@ -12,6 +12,8 @@
 #define NULL 0
 #endif 
 #define size_t unsigned int
+extern unsigned int mem_avail;
+extern unsigned int times_allocated,times_deallocated;
 typedef struct _malloc		/* Turbo C	DJGPP */
 {
 	size_t size;		/* 2 bytes	 4 bytes */

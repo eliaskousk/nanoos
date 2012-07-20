@@ -13,7 +13,9 @@
 extern unsigned int kend;
 extern unsigned int memend;
 static unsigned char *heap_bot,*heap_top;
-
+unsigned int mem_avail=0;
+unsigned int times_allocated=0;
+unsigned int times_deallocated=0;
 void init_heap()
 {
 	heap_bot=(unsigned char*)kend;
@@ -36,6 +38,7 @@ void init_heap()
 		m->used=0;    //not used free/available
 	}
 	cout<<"Heap initialized\n";
+	mem_avail=m->size;
 }
 void *kmalloc(size_t size)
 {
@@ -70,7 +73,7 @@ void *kmalloc(size_t size)
 				continue;
 			}
 			//we can allocate
-			
+			//cout<<"required= "<<required<<" available= "<<mem_avail<<"\n";
 			n=m+sizeof(malloc_t)+size;
 			n->magic=MALLOC_MAGIC;
 			n->used=0;
@@ -80,13 +83,17 @@ void *kmalloc(size_t size)
 			m->next=n;
 			m->size=size;
 			km_mt.unlock();
+			mem_avail-=required;
+			times_allocated++;
 			return ((char*)m+sizeof(malloc_t));
 		}
+		
 	}
 	//m is NULL
 	km_mt.unlock();
 	cout.SetColour(RED,BLACK,0);
-	cout<<"No Memory for allocation\n";
+	cout<<"No Memory for allocation "<<mem_avail<<" available\n";
+	dump_heap();
 	cout.SetColour(WHITE,BLACK,0);
 	return NULL;	
 }
@@ -135,6 +142,7 @@ void kfree(void *p)
 			m->next = m->next->next;
 		}
 	}
+	times_deallocated++;
 	kf_mt.unlock();
 }
 void *krealloc(void *blk, size_t size)
@@ -207,6 +215,7 @@ void dump_heap()
 			(blks_used + blks_free) * sizeof(malloc_t);
 	if(total != heap_top - heap_bot)
 		cout<<"*** some heap memory is not accounted for\n";
+	cout<<"malloc called "<<times_allocated<<" and free called "<<times_deallocated<<"\n";
 	cout<<"===============================================\n";
 	cout.flags(dec);
 }

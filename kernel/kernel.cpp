@@ -15,13 +15,11 @@
 #include "timer.h"
 #include "kbd.h"
 #include "IStream.h"
-//#include "shell.h"
+#include "shell.h"
 #include "multiboot.h"
 #include "kheap.h"
 #include "task.h"
 #include "pci.h"
-//#include "drive.h"
-#include "ide.h"
 #include "mydrive.h"
 
 extern "C" int kmain(unsigned int magic, multibootInfo *mb);
@@ -77,19 +75,22 @@ int kmain(unsigned int magic,multibootInfo *mb)
 	cout<<"Scanning PCI...\n";
 	pci_bus *sys_pci_bus=pci_bus::Instance();
 	sys_pci_bus->scan();
-	
+	init_disks();
+	//init_sysdrives();
 	cout<<"\n\n"<<"Enabling Interrupts\n";	
 	enable();
 	cout<<"done\n";
-	init_disks();
-	//init_sysdrives();
+	dump_heap();
 	cout<<"\n"<<"Dumping IRQ routines \n";
 	IRQ::dump_irq_routines();
 	cout<<"\nDone\n";
 	
 	cout<<"Initializing tasking ";
-	//init_tasks();
+	init_tasks();
 	cout<<"done\n";
+	//shell *s = new shell;
+	//s->start();
+	
 	for(;;);
 	cout<<"\nReached End of kernel\n shoud not happen \n\nGOODBYE\n";
 	disable();
