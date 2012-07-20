@@ -74,6 +74,9 @@ basically whenever a timer interrupt is generated we save the _cpu register_ and
 UPDATE: We are now switching stack to achieve multi tasking. See the ISR_wrap.asm, task.cpp for more details. The create_thread() function is similar to geekos. but the task switching is not. To make things simple we just return the stack_top of the task, and store it to esp in isr_wrap.asm. then the irq0 routine restores the coresponding registers. so our new task is now executing. 
 
 == driver ==
-to be done
+ATA driver and FAT-16 drivers are in alpha stage. Even PCI driver needs to be optimized.
+I would greatly appreciate if some one can tune the ATA system (myata.cpp, mydrive.cpp) for me :))
+
+I would be very happy if some one can contribute.
 == other hardware ==
 to be done
