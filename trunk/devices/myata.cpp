@@ -158,7 +158,7 @@ bool reset_controller(unsigned short port)
 	//cout<<"Stopping interrupt of channel\n";
 	pio_outbyte(port + DEV_CTRL_REG,ATA_CTL_nIEN);
 	my_timer->sleep(2);
-	unsigned int timeout=30000;
+	unsigned int timeout=300000;
 	while(pio_wait_busy(port))
 	{
 		timeout--;
@@ -778,9 +778,9 @@ void init_disks()
 {
 	search_disks();
 	browse_slots();
-	display_slot_info();
+	//display_slot_info();
 	init_sysdrives();
-	display_sysdrive_info();
+	//display_sysdrive_info();
 	
 	/*char ans[5];*/
 	/*if(slot *temp = get_device(0))

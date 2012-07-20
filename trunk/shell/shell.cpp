@@ -12,9 +12,12 @@
 #include "multiboot.h"
 #include "pci.h"
 #include "mydrive.h"
-extern void display_ide();
+extern void display_slot_info();
+extern void dump_heap();
+//extern void init_disks();
 shell::shell()
 {
+	//init_disks();	
 	cout.clear();	
 	cout.SetTextColour(BRIGHTBLUE);
 	for(int i=0;i<6;i++)	
@@ -32,11 +35,13 @@ void shell::about()
 void shell::start()
 {
 	cout<<"Starting shell\n";
-	
+	char *cmd=new char[128]  ;
 	while(1)
-	{
-		char *cmd=new char[128]  ;		
+	{	
+		//memset(cmd,0,128);
+		cout.SetColour(GREEN,BLACK,0);	
 		cout<<"NanOS-#>";
+		cout.SetColour(WHITE,BLACK,0);
 		cin>>cmd;
 		cout<<" \nCommand : "<<cmd<<"\n";
 		if(String::strncmp((const char*)cmd,"about",5)==0)
@@ -90,7 +95,7 @@ void shell::start()
 			}
 		else if(String::strncmp((const char*)cmd,"ide",3)==0)
 			{
-				//display_ide();	
+				display_slot_info();	
 			}
 		else if(String::strncmp((const char*)cmd,"hdinfo",6)==0)
 		{
@@ -102,7 +107,7 @@ void shell::start()
 		}
 		else if(String::strncmp((const char*)cmd,"sysdriveinfo",12)==0)
 		{
-			//sys_drv_info();
+			display_sysdrive_info();
 		}
 		else
 			cout<<"Unknown Command\n For available commands type help\n";
@@ -128,6 +133,7 @@ void shell::meminfo()
 	cout<<"Memory Avail =   "<<(unsigned int)mbt->get_mem_avail()<<"\n";
 	cout.SetColour(WHITE,BLACK,0);
 	cout.flags(dec);
+	dump_heap();
 	cout<<"Total Memory     "<<(memend/0x100000)+1<<" MB\n";
 }
 void shell::help()

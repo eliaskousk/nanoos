@@ -25,7 +25,7 @@ class shell
 		void meminfo();
 	private:
 		static const char *logo[6];
-
+		char *cmd;
 		int get_num_args(const char *str);
 };
 void init_shell(void *);
