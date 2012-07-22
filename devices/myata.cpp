@@ -217,7 +217,7 @@ bool detect_slave(unsigned short port)
 		return false;
 }
 
-void search_disks()
+bool search_disks()
 {
 
 	unsigned int cmdbase_pri=ATA_BASE_PRI,cmdbase_sec=ATA_BASE_SEC;
@@ -228,12 +228,13 @@ void search_disks()
 	cout<<"Initializing IDE harddisks\n";	
 	cout<<"Checking PCI bus for IDE \n";
 	dev=pb->get_dev((unsigned char) 0x01,(unsigned char)0x01);
-	if(dev->next!=NULL)
+	if(dev && (dev->next!=NULL))
 	{
 		cout<<"WARNING: No support for more than one one IDE card\n";
 		cout<<"Default is the first card detected\n";
 		cout<<"On this machine "<<dev->bus<<":"<<dev->dev<<":"<<dev->func<<"\n";
 	}
+	
 	if(dev!=NULL)
 	{
 		
@@ -295,6 +296,8 @@ void search_disks()
 	else
 	{
 		cout<<"No PCI IDE found\n";
+		return false;
+/*
 		cout<<"Using Default IDE ports\n";
 		channels[0].base_reg=ATA_BASE_PRI;
 		channels[0].ctrl_reg=0x3F6;
@@ -303,7 +306,7 @@ void search_disks()
 		channels[1].base_reg=ATA_BASE_SEC;
 		channels[1].ctrl_reg=0x376;
 		channels[1].bmide=0;
-		channels[1].nIEN=0;
+		channels[1].nIEN=0;*/
 	}
 	cout<<"Details of channels found\n";
 	for(int k=0;k<2;k++)
@@ -326,7 +329,7 @@ void search_disks()
 			my_drives[s]=1;
 		s++;
 	}
-	slot *temp=NULL;
+	slot *temp=NULL,*cur_slot=NULL;
 	for(int k=0;k<4;k++)
 	{	// for every entry in my_drives we will create a linklist of drives
 		cout<<" Found drives ";
@@ -371,13 +374,20 @@ void search_disks()
 				temp->ps = 1;
 			}
 			if(slots==NULL)
+			{
 				slots = temp;
+				cur_slot=temp;
+			}
 			else
-				slots->next = temp;
+			{
+				cur_slot->next = temp;
+				cur_slot=cur_slot->next;
+			}
 		}	
 	}
 	cout<<"\n";		
-	cout.flags(dec);		
+	cout.flags(dec);
+	return true;		
 }
 void select_device(slot *s)
 {
@@ -404,11 +414,11 @@ void browse_slots()
 	unsigned char id_cmd=0x00;
 	ata_ident *dat = new ata_ident;
 	memset(dat,'\0',sizeof(ata_ident));
-	while(is_device_busy(temp))
+	/*while(is_device_busy(temp))
 	{
 		cout<<"device is busy!!! sleeping\n";
 		my_timer->sleep(300);
-	};
+	};*/
 	cout.flags(hex|showbase);
 	while(temp)
 	{	
@@ -501,7 +511,6 @@ void browse_slots()
 							
 						break;
 		}
-	mylabel:
 		temp=temp->next;
 	}
 	cout.flags(dec);
@@ -729,11 +738,11 @@ void init_sysdrives()
 	temp = slots;
 	
 	cout<<"[Initializing System drives ]\n";
-	
+	int i=0;
 	while(temp)
 	{
 		//cout<<"Found a slot\n";
-		int i=0;
+		
 		if(temp->devtype) // PATA 0
 			goto ml;
 		else
@@ -757,7 +766,7 @@ void init_sysdrives()
 	ml:
 		temp=temp->next;
 	}
-
+	cout<<"Total "<<i<<" drives found\n";
 }
 void display_sysdrive_info()
 {
@@ -776,12 +785,15 @@ void display_sysdrive_info()
 }
 void init_disks()
 {
-	search_disks();
-	browse_slots();
-	//display_slot_info();
-	init_sysdrives();
-	//display_sysdrive_info();
-	
+	if(search_disks())
+	{
+		browse_slots();
+		//display_slot_info();
+		init_sysdrives();
+		//display_sysdrive_info();
+	}
+	else
+		cout<<"No IDE disks!!!\n";
 	/*char ans[5];*/
 	/*if(slot *temp = get_device(0))
 	{

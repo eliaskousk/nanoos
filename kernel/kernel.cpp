@@ -75,12 +75,13 @@ int kmain(unsigned int magic,multibootInfo *mb)
 	cout<<"Scanning PCI...\n";
 	pci_bus *sys_pci_bus=pci_bus::Instance();
 	sys_pci_bus->scan();
+	sys_pci_bus->list_dev();
 	init_disks();
 	//init_sysdrives();
 	cout<<"\n\n"<<"Enabling Interrupts\n";	
 	enable();
 	cout<<"done\n";
-	dump_heap();
+	//dump_heap();
 	cout<<"\n"<<"Dumping IRQ routines \n";
 	IRQ::dump_irq_routines();
 	cout<<"\nDone\n";
