@@ -17,7 +17,6 @@ extern void dump_heap();
 //extern void init_disks();
 shell::shell()
 {
-	//init_disks();	
 	cout.clear();	
 	cout.SetTextColour(BRIGHTBLUE);
 	for(int i=0;i<6;i++)	
@@ -146,7 +145,8 @@ void shell::help()
 	cout<<"\thello    -> displays hi string\n";
 	cout<<"\tcpuinfo  -> displays cpu info\n";
 	cout<<"\tmeminfo  -> displays memory info\n";
-	
+	cout<<"\tide	  -> displays IDE channel info\n";
+	cout<<"\tsysdriveinfo  -> displays drives found and also tries to dispplay root directory conteny\n";
 	cout<<"\ttasks    -> displays Tasks currently in memory\n";
 }
 shell *myshell;

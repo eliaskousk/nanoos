@@ -382,7 +382,7 @@ void pci_bus_scan()
 void pci_bus::scan()
 {
 	unsigned int bus,dev,fun,num_fun;
-	unsigned int temp[4];
+	//register unsigned int *temp = new unsigned int[4];
 	PCI_common *cfg;
 	pci_dev *pd;
 	if(!is_pci_present())
@@ -401,8 +401,8 @@ void pci_bus::scan()
 
 			for(fun=0;fun<num_fun;fun++)
 			{
-				//temp=new unsigned int[4];
-				memset((unsigned char *)temp,'\0',16);
+				unsigned int *temp=new unsigned int[4];
+				memset(temp,'0',4*sizeof(unsigned int));
 				for(int i=0;i<4;i++)
 				{
 					temp[i]=pci_read_config_dword(bus,dev,fun,i<<2);
@@ -410,7 +410,7 @@ void pci_bus::scan()
 				cfg=(struct PCI_common*)temp;
 				if((cfg->vendor_id==0xffff) || (cfg->vendor_id==0x0000))
 				{
-					//delete[] temp;
+					delete[] temp;
 					continue;
 				}
 				num_dev++;
