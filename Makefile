@@ -2,6 +2,7 @@ include kernel/Makefile
 include x86/Makefile
 include C++/Makefile
 include devices/Makefile
+include net/Makefile
 include shell/Makefile
 
 INCLUDE := -I./include 
