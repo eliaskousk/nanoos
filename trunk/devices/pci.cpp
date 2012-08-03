@@ -104,6 +104,16 @@ void pci_write_config_dword(int bus, int dev, int func, int reg, unsigned int va
 {
 	write_pci(bus, dev, func, reg, val, sizeof(unsigned int));
 }
+unsigned char pci_read_irq(int bus,int dev,int func)
+{
+	unsigned char irq;
+
+	irq = pci_read_config_byte(bus, dev, func, PCI_INTERRUPT_PIN);
+	if (irq)
+		irq = pci_read_config_byte(bus, dev, func, PCI_INTERRUPT_LINE);
+
+	return irq;
+}
 // checks if a PCI bus is present, for further clarification see the 
 // link bellow
 // takes nothing 
@@ -424,6 +434,8 @@ void pci_bus::scan()
 				pd->prev=NULL;
 				pd->next=NULL;
 				pd->common=cfg;
+				pd->irq = pci_read_irq(bus,dev,fun);
+				pci_set_master(pd);
 				if(pci_list==NULL)
 				{
 					pci_list=pd;
@@ -454,8 +466,8 @@ void pci_bus::list_dev()
 		cout<<vendor_to_string(device->common->vendor_id)<<":"<<vendor_device_to_string(device->common->vendor_id,device->common->device_id)<<":";
 		cout<<class_to_string(device->common->classcode,device->common->subclass)<<":";
 		cout<<(int)device->common->classcode<<":"<<(int)device->common->subclass<<":";
-		cout<<(int)(device->common->Prog_if)<<":"<<(int)device->common->header_type<<"\n";
-		
+		cout<<(int)(device->common->Prog_if)<<":"<<(int)device->common->header_type<<" irq:";
+		cout<<(int)device->irq<<"\n";
 		device=device->next;
 	}
 	cout.flags(dec);
@@ -553,4 +565,29 @@ unsigned int get_bar(pci_dev *dev,int bar_num)
 		return temp & (~0x03);
 	return temp & (~0x0F);
 }
+void pci_set_master(pci_dev *pdev)
+{
+	unsigned short cmd;
+	unsigned char lat;
 
+	cmd = pci_read_config_word(pdev->bus, pdev->dev, pdev->func, PCI_COMMAND);
+	if ( !(cmd & PCI_COMMAND_MASTER) )
+	{
+		cout<<"PCI: Enabling bus mastering for device in slot "<<(unsigned short) pdev->bus<<" " \
+			<<(unsigned short)pdev->dev<<" "<<(unsigned short) pdev->func<<"\n";
+		cmd |= PCI_COMMAND_MASTER;
+		pci_write_config_word(pdev->bus, pdev->dev, pdev->func, PCI_COMMAND, cmd);
+	}
+	// Check the latency time, because certain BIOSes forget to set	//
+	// it properly...						//
+	lat = pci_read_config_byte(pdev->bus, pdev->dev, pdev->func, PCI_LATENCY_TIMER);
+	if ( lat < 16 )
+		lat =  255; // 255 is the max latency
+	else if ( lat > 255 )
+		lat = 255;
+	else
+		return;
+	cout<<"PCI: Setting latency timer of device "<<(unsigned short) pdev->bus<<" "<<(unsigned short)pdev->dev \
+		<<" "<<(unsigned short) pdev->func<<" to "<<(unsigned short) lat<<"\n";
+	pci_write_config_byte(pdev->bus, pdev->dev, pdev->func, PCI_LATENCY_TIMER, lat);
+}

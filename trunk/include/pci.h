@@ -8,8 +8,19 @@
 #ifndef __PCI_H__
 #define __PCI_H__
 #include "singleton.h"
+
+//! PCI command register (offset).
+#define PCI_COMMAND			0x04
+//! Enable bus master (a.k.a. 32-bit DMA).
+#define PCI_COMMAND_MASTER		0x04
+//! PCI latency timer register (offset).
+#define PCI_LATENCY_TIMER		0x0D
 #define PCI_BASE_REG 0xCFC
 #define PCI_DATA_REG 0xCF8
+//! PCI interrupt line register (offset).
+#define PCI_INTERRUPT_LINE		0x3C
+//! PCI interrupt pin register (offset).
+#define PCI_INTERRUPT_PIN		0x3D
 
 char *class_to_string(unsigned char classcode,unsigned char subclass);
 // #include "pcihdr.h" // for vendor device and function def
@@ -119,6 +130,7 @@ struct pci_dev
 {
 	unsigned int bus,dev,func;
 	PCI_common *common;
+	unsigned char irq;
 	unsigned int devi[60];
 	pci_dev *next;
 	pci_dev *prev;
@@ -154,5 +166,6 @@ void pci_write_config_dword(int bus, int dev, int func, int reg, unsigned int va
 void pci_bus_scan();
 unsigned int get_bar(pci_dev *dev,int bar_num);
 bar_type_t get_bar_type(pci_dev *dev, int bar_num);
+void pci_set_master(pci_dev *cfg);
 #endif
 
