@@ -1,36 +1,94 @@
-#include "OStream.h"
+//mrtl
 #include "low-io.h"
-#include "pci.h"
-#include "myrtl8139.h"
 #include "irq.h"
 #include "timer.h"
-#include "utils.h"
+#include "string.h"
+#include "OStream.h"
+#include "myrtl8139.h"
+
 using namespace String;
+
+/* Size of the in-memory receive ring. */
+#define RX_BUF_LEN_IDX	0			/* 0==8K, 1==16K, 2==32K, 3==64K */
+#define RX_BUF_LEN (8192 << RX_BUF_LEN_IDX)
+/* Size of the Tx bounce buffers -- must be at least (dev->mtu+14+4). */
+#define TX_BUF_SIZE	1536
+/* The rest of these values should never change. */
+#define NUM_TX_DESC	4			/* Number of Tx descriptor registers. */
+/* The following settings are log_2(bytes)-4:  0 == 16 bytes .. 6==1024. */
+#define RX_FIFO_THRESH	4		/* Rx buffer level before first PCI xfer.  */
+#define RX_DMA_BURST	4		/* Maximum PCI burst, '4' is 256 bytes */
+#define TX_DMA_BURST	4		/* Calculate as 16<<val. */
+#define MAX_DMA_BURST	7
+#define TX_FIFO_THRESH 256	/* In bytes, rounded down to 32 byte units. */
+
+// reset the RTL 8139 card
+bool rtl_8139_reset(unsigned short base)
+{
+	unsigned short timeout = 100;
+	outportb(base + RTL8139_CMD , RESET); // send reset command
+	while(timeout--)			// wait for reset to be completed
+	{
+		my_timer->sleep(10);
+		if(!(inportb(base + RTL8139_CMD) & RESET))
+		return true; // return true if we finished before timeout
+	}
+	return false;
+}
+
 void rtl8139::init(unsigned short base, unsigned char intr)
 {
 	cout<<"Initializing RTL 8139 NIC...";
 	iobase = base;
 	irq = intr;
-	outportb(iobase + CONFIG1, 0); //poweron
-	outportb(iobase + RTL8139_CMD, RESET); // software reset the chip
-	while(inportb(iobase + RTL8139_CMD) & RESET); // loop until the reset actually happens
-	read_mac();
-	rec_buffer = new unsigned char[8192+16]; // get 8kb+16 byte receive buffer
-	outportl(iobase + RBSTART, (unsigned int)rec_buffer); // set the rx buffer start address
-	outportw(iobase + IMR, RXOK | TXOK); // generate ieq for rxok and txok
-	outportw(iobase + ISR, 0x0005);     // enable IRQ
-	outportl(iobase + RCR, (AAP | APM | AM | AB | AR | WRAP) & ~(unsigned int)1); // receiver config register
-	outportb(iobase + RTL8139_CMD, RECEIVER_ENABLE | TRANSMITTER_ENABLE); // enable the tx and rx mechanism
-	IRQ::install_handler(irq, irq_handler);
+	IRQ::install_handler(irq,rtl8139::irq_handler);
 	IRQ::enable_irq(irq);
-	cout<<"Done\n";
+	if(!rtl_8139_reset(iobase))		// reset the RTL 8139 chip
+	{
+		cout.SetColour(RED,BLACK,0);
+		cout<<"RTL 8139 reset failed\n";
+		cout.SetColour(WHITE,BLACK,0);
+		return;
+	}
+	//outportb(iobase + CONFIG_9346, 0xC0); // unlock config registers
+	outportl(iobase + TCR,0x03000700);
+	outportl(iobase + RCR,0x0000070a);
+	rec_buffer = NULL;
+	rec_buffer = new unsigned char[8192+16]; // get 8kb+16 byte receive buffer
+	tx_buffer = new unsigned char [TX_BUF_SIZE * NUM_TX_DESC];
+	if((rec_buffer == NULL) ||(tx_buffer == NULL))
+	{
+		cout.SetColour(RED,BLACK,0);		
+		cout<<"No memory for RX/TX buffer\n Exiting\n";
+		cout.SetColour(WHITE,BLACK,0); 
+		if(rec_buffer) delete rec_buffer;
+		if(tx_buffer) delete tx_buffer;
+		return;
+	}
+	memset(rec_buffer,0,8196+16);
+	memset(tx_buffer,0,TX_BUF_SIZE * NUM_TX_DESC);
+	outportb(iobase + RTL8139_CMD, RECEIVER_ENABLE | TRANSMITTER_ENABLE); // enable the tx and rx mechanism
+	outportl(iobase + RCR, (MAX_DMA_BURST<<8)|( AAP | APM | AM | AB | AR | WRAP));
+	outportl(iobase + TCR, (MAX_DMA_BURST<<8)|TCR_IFG_STD);
+	outportl(iobase + 0xDA, 0x1FFF); // MAx RX packet size
+	outportb(iobase + 0xEC, 0x3B); // MAx TX packet size
+	outportw(iobase + ISR, 0x0000);     // enable IRQ
+	outportw(iobase + IMR,0xFFFF );//RXOK | TXOK); // generate ieq for rxok and txok
+	outportw(iobase + RBSTART, (unsigned int)rec_buffer); // set the rx buffer start address
+	received_index = send_index =0;
+	//outportl (iobase + RXMISSED, 0x0);
+	read_mac(); // read the MAC ID from IDRs
+	//outportl(iobase +MAR0,0xffffffff);
+	//outportl(iobase +MAR4,0xffffffff);
+	//outportb(iobase + HLTCLK, 'R');
+	//outportb(iobase + CONFIG_9346, 0x00);
 }
 // send a packet
 void rtl8139::send(void *buffer, int len)
 {
 	cout<<"Sending Packet...\n";
 	outportl(iobase + TSAD0 + send_index * 4, (unsigned int)buffer);
-	outportl(iobase + TSD0 + send_index * 4,(unsigned int)len);
+	outportl(iobase + TSD0 + send_index * 4, (( TX_FIFO_THRESH & 0x7e0 ) << 11 )|(unsigned int)len);
 	send_index = (send_index + 1) % 4;
 }
 
@@ -49,6 +107,7 @@ unsigned short rtl8139::receive(void *buffer)
 		outportw(iobase + ISR, 1); // clear rhe isr reg so that we can get new packet
 		inportw(iobase + ISR);
 	}
+	return 1;
 }
 // read and populate MAC ID
 void rtl8139::read_mac()
@@ -78,6 +137,10 @@ void rtl8139::show_mac()
 }
 void rtl8139::info()
 {
+	cout.flags(hex|showbase);
+	cout<<"IO base @"<<(unsigned short)iobase;
+	cout.flags(dec);
+	cout<<" using IRQ "<<(unsigned short)irq<<" ";	
 	if (inportb(iobase + MSR) & (1 << 2))
 		cout<<"Link fail ";
 	else
@@ -91,84 +154,41 @@ void rtl8139::info()
 	else
 		cout<<"half ";
 	if(inportb(iobase + BMSR) & (1 << 2))
-		cout<<"up\n";
+		cout<<"up ";
 	else
-		cout<<"down\n";
+		cout<<"down ";
+	
+	show_mac();
 }
 void rtl8139::irq_handler(void *sd)
 {
-	cout<<"RTL 8139 handler\n";
-}
-rtl8139 *rtl_dev;
-//==============================Driver def ends ============================
-
-// ARP protocol packet structure
-typedef struct proto_arp {
-	unsigned short hard_type;
-	unsigned short prot_type;
-	unsigned char hard_size;
-	unsigned char prot_size;
-	unsigned short op;	
-	unsigned char sender_mac[6];
-	unsigned int sender_ipv4;
-	unsigned char target_mac[6];
-	unsigned int target_ipv4;
-} __attribute((packed)) proto_arp_t;
-enum {
-	ARP_OP_REQUEST = 0x100,
-	ARP_OP_REPLY = 0x200,
-	ARP_OP_RARP_REQUEST,
-	ARP_OP_RARP_REPLY
-};
-
-enum {
-	ARP_HARD_TYPE_ETHERNET = 0x100
-};
-typedef struct packet_t
-{
-	unsigned char dest_mac[6];
-	unsigned char src_mac[6];
-	unsigned short proto;
-}__attribute((packed)) packet;
-void test_req_arp()
-{
-	proto_arp_t *discover = new proto_arp_t;
-	String::memset(discover,0,sizeof(proto_arp_t));
-	discover->hard_type = ARP_HARD_TYPE_ETHERNET;
-	discover->prot_type = 8;
-	discover->hard_size = 6;
-	discover->prot_size = 4;
-	discover->op = ARP_OP_REQUEST;
-	packet *pack = new packet;
-	String::memset(pack->dest_mac,0xff,6);
-	rtl_dev->get_mac(pack->src_mac);
-	//if(rtl_dev)
-	//	String::memcpy(pack->src_mac,rtl_dev->mac_id,6);
-	pack->proto=0x0806;
+	// so we got an IRQ Eh... our device is working..
+	// now check if the IRQ is for receive or is it for transmit.
+	unsigned short volatile isr_val;
 	
-	unsigned char *arp_pack = new unsigned char[14+sizeof(proto_arp_t)];
-	String::memcpy(arp_pack,pack,14);
-	String::memcpy(arp_pack+14,(unsigned char *)discover,sizeof(proto_arp_t));
-	cout<<"sending=>\n";
-	hex_dump(arp_pack,60);
-	//hex_dump(arp_pack,14+sizeof(proto_arp_t));
-	//if(rtl_dev)
-	//	rtl_8139_send(rtl_dev,arp_pack,14+sizeof(proto_arp_t));
-	rtl_dev->send(arp_pack, 14 + sizeof(proto_arp_t));
-	//my_timer->sleep(100);
-	unsigned char arp_rec[1024];
-	unsigned char timeout=10;
-	/*while((!rtl_8139_receive(rtl_dev,(unsigned char *)arp_rec)>0) && timeout)
+	isr_val = inportw( iobase + ISR);
+	if(isr_val & TXOK)
 	{
-		timeout--;
-		my_timer->sleep(10);
-	}*/
+		// we transmitted a packet
 		
-	if(rtl_dev->receive((unsigned char *)arp_rec)!=0)
-		hex_dump(arp_rec,256);
-
+		
+		cout<<"TX ok\n";
+	}
+	else if(isr_val & RXOK)
+	{
+		cout<<"RX ok\n"; 
+		
+	}
+	else 
+	{
+		cout<<"Other ISR ="<<isr_val;
+	}
+	outportw( iobase + ISR, isr_val); //make TXok bit low again so we will get next TX interrupt
+	inportw( iobase + ISR);	
+	
 }
 
+rtl8139 *rtl_dev;
 void detect_netdev()
 {
 	pci_bus *pb = pci_bus::Instance();
@@ -183,12 +203,18 @@ void detect_netdev()
 			<<net_dev->func<<" irq "<<(unsigned short)net_dev->irq<<" ";	
 		cout<<vendor_to_string(net_dev->common->vendor_id);
 		cout<<vendor_device_to_string(net_dev->common->vendor_id,net_dev->common->device_id)<<"\n";
+		cout<<(unsigned int)pci_read_irq(net_dev->bus,net_dev->dev,net_dev->func)<<"\n";
 		if((net_dev->common->vendor_id == 0x10ec) && (net_dev->common->device_id==0x8139))
 		{
 			rtl_dev = new rtl8139;
 			rtl_dev->init(get_bar(net_dev,0)&(~0x3), net_dev->irq);
 			rtl_dev->show_mac();
 			rtl_dev->info();
+			rtl_dev->send((char *)rtl_dev, 60);
 		}
+		else
+			cout<<"Unsupported device...\n";
 	}
+	
 }
+

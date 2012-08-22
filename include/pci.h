@@ -11,16 +11,33 @@
 
 //! PCI command register (offset).
 #define PCI_COMMAND			0x04
+//! PCI status register (offset).
+#define PCI_STATUS			0x06
+//! using the ports).
+#define PCI_COMMAND_IO			0x01
+//! The device is memory-based (a.k.a. can perform I/O operations
+//! by a memory-mapped buffer)
+#define PCI_COMMAND_MEMORY		0x02
+//! The PCI cache line size register (offset).
+#define PCI_CACHE_LINE_SIZE		0x0C
 //! Enable bus master (a.k.a. 32-bit DMA).
 #define PCI_COMMAND_MASTER		0x04
 //! PCI latency timer register (offset).
 #define PCI_LATENCY_TIMER		0x0D
-#define PCI_BASE_REG 0xCFC
-#define PCI_DATA_REG 0xCF8
+#define PCI_BASE_REG			0xCFC
+#define PCI_DATA_REG			0xCF8
 //! PCI interrupt line register (offset).
 #define PCI_INTERRUPT_LINE		0x3C
 //! PCI interrupt pin register (offset).
 #define PCI_INTERRUPT_PIN		0x3D
+//! This is a normal PCI device.
+#define PCI_HEADER_TYPE_NORMAL		0
+//! This is a bridge PCI device.
+#define PCI_HEADER_TYPE_BRIDGE		1
+//! This is a card-bus PCI device.
+#define PCI_HEADER_TYPE_CARDBUS		2
+
+#define L1_CACHE_BYTES			(1 << 4) //for 386
 
 char *class_to_string(unsigned char classcode,unsigned char subclass);
 // #include "pcihdr.h" // for vendor device and function def
@@ -145,6 +162,8 @@ class pci_bus: public Singleton<pci_bus>
 		pci_dev *pci_list;
 		pci_dev *end;
 		unsigned int num_dev;
+		
+		
 		//pci_bus(): pci_list(NULL),end(NULL),num_dev(0){};
 	public:		
 		void list_dev();
@@ -167,5 +186,10 @@ void pci_bus_scan();
 unsigned int get_bar(pci_dev *dev,int bar_num);
 bar_type_t get_bar_type(pci_dev *dev, int bar_num);
 void pci_set_master(pci_dev *cfg);
+unsigned char pci_set_pwr_state(pci_dev *dev, unsigned char state);
+unsigned char pci_get_capability(pci_dev *dev, unsigned char *cap);
+unsigned char pci_enable_device_io(pci_dev *dev);
+int pci_enable_device(pci_dev *dev);
+unsigned char pci_read_irq(int bus,int dev,int func);
 #endif
 

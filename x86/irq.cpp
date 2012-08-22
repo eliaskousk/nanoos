@@ -12,8 +12,34 @@
 namespace IRQ{
 static unsigned short volatile IRQ_mask;
 extern "C" {
-		irqfunc_t irq_routines[16] =
+		irqfunc_t irq_routines[224] =
 		{
+		    0, 0, 0, 0, 0, 0, 0, 0,
+		    0, 0, 0, 0, 0, 0, 0, 0,
+		    0, 0, 0, 0, 0, 0, 0, 0,
+		    0, 0, 0, 0, 0, 0, 0, 0,
+		    0, 0, 0, 0, 0, 0, 0, 0,
+		    0, 0, 0, 0, 0, 0, 0, 0,
+		    0, 0, 0, 0, 0, 0, 0, 0,
+		    0, 0, 0, 0, 0, 0, 0, 0,
+		    0, 0, 0, 0, 0, 0, 0, 0,
+		    0, 0, 0, 0, 0, 0, 0, 0,
+		    0, 0, 0, 0, 0, 0, 0, 0,
+		    0, 0, 0, 0, 0, 0, 0, 0,
+		    0, 0, 0, 0, 0, 0, 0, 0,
+		    0, 0, 0, 0, 0, 0, 0, 0,
+		    0, 0, 0, 0, 0, 0, 0, 0,
+		    0, 0, 0, 0, 0, 0, 0, 0,
+		    0, 0, 0, 0, 0, 0, 0, 0,
+		    0, 0, 0, 0, 0, 0, 0, 0,
+		    0, 0, 0, 0, 0, 0, 0, 0,
+		    0, 0, 0, 0, 0, 0, 0, 0,
+		    0, 0, 0, 0, 0, 0, 0, 0,
+		    0, 0, 0, 0, 0, 0, 0, 0,
+		    0, 0, 0, 0, 0, 0, 0, 0,
+		    0, 0, 0, 0, 0, 0, 0, 0,
+		    0, 0, 0, 0, 0, 0, 0, 0,
+		    0, 0, 0, 0, 0, 0, 0, 0,
 		    0, 0, 0, 0, 0, 0, 0, 0,
 		    0, 0, 0, 0, 0, 0, 0, 0
 		};
@@ -21,7 +47,7 @@ extern "C" {
 	{
 		unsigned char irq,cmd;
 		irq=r->int_no;
-		cmd=0x60 | (irq & 7);
+		//cmd=0x60 | (irq & 7);
 		if(irq<8)
 			outportb(0x20,0x20);
 		else
@@ -65,7 +91,7 @@ extern "C" {
 			cout<<"No handlers for IRQ "<< (int)r->int_no-32<< "installed\n";
 		}
 		end_irq(r);
-		//outportl(0x80,inportl(0x80)); //iodelay
+		outportl(0x80,inportl(0x80)); //iodelay
 	}
 
 	/* These are own ISRs that point to our special IRQ handler
@@ -86,6 +112,13 @@ extern "C" {
 	extern void _irq13(IDT::regs *);
 	extern void _irq14(IDT::regs *);
 	extern void _irq15(IDT::regs *);
+	extern void _irq16(IDT::regs *);
+	extern void _irq17(IDT::regs *);
+	extern void _irq18(IDT::regs *);
+	extern void _irq19(IDT::regs *);
+	extern void _irq20(IDT::regs *);
+	extern void _irq21(IDT::regs *);
+	extern void _irq65(IDT::regs *);
 }// c declarationc end
 
 
@@ -152,16 +185,24 @@ extern "C" {
 		IDT::set_gate(45, _irq13, 0x08, 0x8E);
 		IDT::set_gate(46, _irq14, 0x08, 0x8E);
     		IDT::set_gate(47, _irq15, 0x08, 0x8E);
+		IDT::set_gate(48, _irq16, 0x08, 0x8E);
+		IDT::set_gate(49, _irq17, 0x08, 0x8E);
+		IDT::set_gate(50, _irq18, 0x08, 0x8E);
+		IDT::set_gate(51, _irq19, 0x08, 0x8E);
+		IDT::set_gate(52, _irq20, 0x08, 0x8E);
+		IDT::set_gate(53, _irq21, 0x08, 0x8E);
+		
 		cout<<"IRQ initialized\n";
-		install_handler(7,spurious_irq7);
+		enable_irq(2); // hope the 9 to 15 interrupt will fire
+		install_handler(7,spurious_irq7); // stop the spurious irq7
      		//outportb(0x21, 0xFF);
-		//outportb(0xA1, 0xFB);
-
+		//outportb(0xA1, 0xFF);
+		
 	}
 	void dump_irq_routines()
 	{
 		int i;
-		for (i=0;i<16;i++)
+		for (i=0;i<128;i++)
 		{
 			if(irq_routines[i]!=0)
 			cout<<"irq "<< i <<"\t";
@@ -177,7 +218,7 @@ extern "C" {
 		irq_routines[irq_num]=vect;
 	}
 	// return current IRQ mask
-	unsigned short get_irq_mask()
+	volatile unsigned short get_irq_mask()
 	{
 		return IRQ_mask;
 	}
@@ -192,8 +233,8 @@ extern "C" {
 	// set IRQ mask 
 	void set_irq_mask(unsigned short mask)
 	{
-		unsigned short old_mask;
-		unsigned char cmask;
+		volatile unsigned short old_mask;
+		volatile unsigned char cmask;
 		old_mask=get_irq_mask();
 		cmask=mask&0xff;
 		if(cmask!=(old_mask&0xff)) 
@@ -202,23 +243,27 @@ extern "C" {
 		if(cmask!=((old_mask>>8)&0xff))
 			outportb(0xA1,cmask); // mask slave controller
 		IRQ_mask=mask;
-		//outportl(0x80,inportl(0x80)); //iodelay
+		outportl(0x80,inportl(0x80)); //iodelay
 	}
 	// enable a perticular IRQ
 	void enable_irq(int irq)
 	{
-		unsigned short set;
+		disable();
+		volatile unsigned short set;
 		set=~(1<<irq);
 		set&=get_irq_mask();
 		set_irq_mask(set);
+		enable();
 	}
 	// disable or stop a perticular IRQ
 	void disable_irq(int irq)
 	{
+		disable();
 		unsigned short set;
 		set=(1<<irq);
 		set|=get_irq_mask();
 		set_irq_mask(set);
+		enable();
 	}
 }; //end namespace IRQ
 

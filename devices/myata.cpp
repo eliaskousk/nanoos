@@ -240,8 +240,9 @@ bool search_disks()
 		
 		cout<<vendor_to_string(dev->common->vendor_id) \
                 <<vendor_device_to_string(dev->common->vendor_id,dev->common->device_id) \
-		<<" Present on bus="<<dev->bus<<":"<<dev->dev<<":"<<dev->func \
+		<<" Present on bus="<<dev->bus<<":"<<dev->dev<<":"<<dev->func<<" irq ="<<(unsigned int)dev->irq \
 		<<"\n";
+		
 		cmdbase_pri=get_bar(dev,0);
 		ctrlbase_pri=get_bar(dev,1);
 		cmdbase_sec=get_bar(dev,2);

@@ -106,12 +106,13 @@ void pci_write_config_dword(int bus, int dev, int func, int reg, unsigned int va
 }
 unsigned char pci_read_irq(int bus,int dev,int func)
 {
-	unsigned char irq;
+	unsigned char irq = 0;
 
 	irq = pci_read_config_byte(bus, dev, func, PCI_INTERRUPT_PIN);
+	cout<<"DEBUG"<<(unsigned int)irq<<" pin\n";
 	if (irq)
 		irq = pci_read_config_byte(bus, dev, func, PCI_INTERRUPT_LINE);
-
+	cout<<"DEBUG"<<(unsigned int)irq<<" line\n";
 	return irq;
 }
 // checks if a PCI bus is present, for further clarification see the 
@@ -128,9 +129,9 @@ bool is_pci_present()
 	cout.flags(dec);
 #endif
 	if(res==0xFFFFFFFF)
-		return 0;
+		return false;
 	else
-		return 1;
+		return true;
 }
 // converts classcode and subclass to coresponding sring
 // takes classcode and subclass
@@ -443,7 +444,7 @@ void pci_bus::scan()
 					pci_list->next=NULL;
 					pci_list->prev=NULL;
 				}
-				//else
+				else
 				{
 					pd->prev=end;
 					end->next=pd;
@@ -590,4 +591,148 @@ void pci_set_master(pci_dev *pdev)
 	cout<<"PCI: Setting latency timer of device "<<(unsigned short) pdev->bus<<" "<<(unsigned short)pdev->dev \
 		<<" "<<(unsigned short) pdev->func<<" to "<<(unsigned short) lat<<"\n";
 	pci_write_config_byte(pdev->bus, pdev->dev, pdev->func, PCI_LATENCY_TIMER, lat);
+	cout<<"Enabling Device IO\n";
+	if(pci_enable_device_io(pdev) != 0)
+		cout<<"WARNING : Unable to enable device... should be enabled latter\n"; 
 }
+
+#if 0// set the power state of a device
+//int pci_set_power_state(pci_cfg_t *cfg, int state)
+int pci_set_pwr_state(pci_dev *cfg, int state)
+{
+	int pm;
+	unsigned short pmcsr;
+	unsigned short pmc;
+
+	// Bound the state to a valid range				//
+	if (state > 3) state = 3;
+
+	// Validate current state.					//
+	// Can enter D0 from any state, but we can't go deeper if we're //
+	// in a low power state.					//
+	if (state > 0 && cfg->current_state > state)
+		return(-1); //invalid einval
+	else if (cfg->current_state == state)
+		// we're already there 					//
+		return(0);
+
+	// find PCI PM capability in list 				//
+	pm = pci_find_capability(cfg, PCI_CAP_ID_PM);
+
+	// Abort if the device doesn't support PM capabilities		//
+	if (!pm) return(-2); //error in IO 
+
+	// Check if this device supports the desired state		//
+	if (state == 1 || state == 2)
+	{
+		pmc = pci_read_config_word(cfg->bus, cfg->dev, cfg->func, pm+PCI_PM_PMC);
+		if ( (state == 1 && !(pmc & PCI_PM_CAP_D1)) )
+			return(-2); //error IO
+		else if ( (state == 2 && !(pmc & PCI_PM_CAP_D2)) )
+			return(-2); //error IO
+	}
+
+	// If we're in D3, force entire word to 0.			//
+	// This doesn't affect PME_Status, disables PME_En, and		//
+	// sets PowerState to 0.					//
+	if ( cfg->current_state>=3 )
+		pmcsr = 0;
+	else
+	{
+		pmcsr = pci_read_config_word(cfg->bus, cfg->dev, cfg->func, pm+PCI_PM_CTRL);
+		pmcsr &= ~PCI_PM_CTRL_STATE_MASK;
+		pmcsr |= state;
+	}
+
+	// Enter specified state //
+	pci_write_config_word(cfg->bus, cfg->dev, cfg->func, pm+PCI_PM_CTRL, pmcsr);
+
+	// Mandatory power management transition delays			//
+	// see PCI PM 1.1 5.6.1 table 18				//
+	if( (state == 3) || (cfg->current_state == 3) )
+	{
+		// Set task state to interruptible			//
+		// LINUX do it so:					//
+		// 	set_current_state(TASK_UNINTERRUPTIBLE);	//
+		// 	schedule_timeout(HZ/100);			//
+		delay(100);
+	}
+	else if( (state == 2) || (cfg->current_state == 2) )
+		// udelay(200);
+		delay(200);
+	cfg->current_state = state;
+
+	return(0);
+}
+#endif
+unsigned char pci_enable_device_io(pci_dev *cfg)
+{
+	unsigned short cmd, old_cmd;
+	cout<<"\n\rLow level enabling PCI device<<"<<(unsigned short)cfg->bus<<(unsigned short)cfg->dev<<(unsigned short)cfg->func;
+
+	old_cmd = cmd = pci_read_config_word(cfg->bus, cfg->dev, cfg->func, PCI_COMMAND);
+	for (int i=0; i<6; i++)
+	{
+		if (get_bar(cfg, i) == PCI_COMMAND_IO)
+			// Command IO based				//
+			cmd |= PCI_COMMAND_IO;
+	}
+	if ( !(cmd & PCI_COMMAND_IO) )
+	{
+		// Device is not IO-based				//
+		cout<<"\n\rDevice is not IO-based!!!";
+		return(0xe); //invalid einval
+	}
+
+	if ( (cfg->common->header_type & 0x7F) == PCI_HEADER_TYPE_BRIDGE )
+	{
+		// Any PCI-to-PCI bridge must be enabled by setting	//
+		// both I/O space and memory space access bits in the	//
+		// command register.					//
+		cmd |= PCI_COMMAND_MEMORY;
+	}
+
+	// Always enable bus master!!!					//
+	cmd |= PCI_COMMAND_MASTER;
+
+	if ( cmd!=old_cmd )
+	{
+		// Set the cache line and default latency (32)			//
+		pci_write_config_word(cfg->bus, cfg->dev, cfg->func,
+				PCI_CACHE_LINE_SIZE, (32 << 8) | (L1_CACHE_BYTES / sizeof(unsigned int)));
+		// Enable the appropriate bits in the PCI command register	//
+		pci_write_config_word(cfg->bus, cfg->dev, cfg->func, PCI_COMMAND, cmd);
+		cout<<"OK!\n";
+	}
+	else
+		cout<<"Already enabled.\n";
+	return(0);
+}
+#if 0
+//enables a device for IO.
+int pci_enable_device(pci_dev *cfg)
+{
+	int err, pm;
+
+	cout<<"Powering on PCI device"<<(unsigned short)cfg->bus<<(unsigned short) cfg->dev<<(unsigned short) cfg->func<<"\n";
+	pm = pci_set_power_state(cfg, 0);
+	switch( pm )
+	{
+		case 0:
+		cout<<"OK!";
+		break;
+
+		case (-2):
+		cout<<"Device doesn't support Power Management Capabilities!!!";
+		break;
+
+		case (-1):
+		cout<<"\n\rDevice is already in this power state.";
+		break;
+	}
+
+	if ((err = pcibios_enable_device_io(cfg)) < 0)
+		return(err);
+	return(0);
+}
+#endif
