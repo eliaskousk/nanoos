@@ -17,6 +17,7 @@
 #define ISR			0x3e
 #define RXOK			(1<<0)	// Receive OK
 #define TXOK			(1<<2)  // tx ok
+#define TCR			0x40
 #define RCR			0x44
 #define AAP		(1<<0) // accept all
 #define APM		(1<<1) // accept physical match ( meant only for this)
@@ -26,6 +27,12 @@
 #define AER		(1<<5)	// accept error packet
 #define WRAP		(1<<7)	//wrap , if set to 0 the remaider will be written to the begining of rx buffer, if 1 then memory after
 				// the buffer so atleast 1.5k bytes be left at the end of rx buffer to accomodate overflow
+#define CONFIG_9346
+#define TCR_IFG_STD	(3<<24)
+#define RXMISSED
+#define MAR0
+#define MAR4
+
 #define CONFIG1		0x52
 //current address of packet read
 #define CAPR	0x0038
@@ -41,7 +48,7 @@ class rtl8139
 	private:
 		unsigned char mac_id[6];
 		void read_mac();	// we read mac id only once to populate mac_id[]
-		unsigned short iobase;  // will be supplied by pci subsystem
+		static unsigned short iobase;  // will be supplied by pci subsystem
 		unsigned char irq;
 	protected:
 		static void irq_handler(void *sd);
@@ -52,6 +59,7 @@ class rtl8139
 		int send_index;
 		int received_index;
 		unsigned char *rec_buffer;
+		unsigned char *tx_buffer;
 	public:
 		void init(unsigned short base, unsigned char intr);
 		void send(void *buffer,int len); // send the buffer of length len to hw
@@ -60,6 +68,6 @@ class rtl8139
 		void show_mac(); // will print the mac 
 		void info();
 };
-
+unsigned short rtl8139::iobase;
 #endif
 

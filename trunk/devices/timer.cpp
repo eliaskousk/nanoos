@@ -11,7 +11,7 @@
 #include "timer.h"
 #include "irq.h"
 TIMER *my_timer;
-extern "C"{unsigned int task_switch(void *sp);}
+//extern "C"{unsigned int task_switch(void *sp);}
 	/* to set timer frequency IRQ0 frequency */
 	void TIMER::timer_phase(int hz)
 	{

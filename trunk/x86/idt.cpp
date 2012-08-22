@@ -210,6 +210,7 @@ extern "C" {
 		set_gate(29, _isr29, 0x08, 0x8E);
 		set_gate(30, _isr30, 0x08, 0x8E);
 		set_gate(31, _isr31, 0x08, 0x8E);
+		
 		load(&this_idtr); //our IDT table is loaded on to the processor
 		cout<<"IDT Loaded\n";
 	}

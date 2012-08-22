@@ -33,7 +33,7 @@ void shell::about()
 }
 void shell::start()
 {
-	cout<<"Starting shell\n";
+	cout<<"Starting shell : Type help for available commands\n";
 	char *cmd=new char[128]  ;
 	while(1)
 	{	
@@ -42,7 +42,7 @@ void shell::start()
 		cout<<"NanOS-#>";
 		cout.SetColour(WHITE,BLACK,0);
 		cin>>cmd;
-		cout<<" \nCommand : "<<cmd<<"\n";
+		//cout<<" \nCommand : "<<cmd<<"\n";
 		if(String::strncmp((const char*)cmd,"about",5)==0)
 			about();
 		else if(String::strncmp((const char*)cmd,"help",4)==0)
@@ -108,6 +108,8 @@ void shell::start()
 		{
 			display_sysdrive_info();
 		}
+		else if(String::strcmp((const char*)cmd, "")==0);
+		
 		else
 			cout<<"Unknown Command\n For available commands type help\n";
 		

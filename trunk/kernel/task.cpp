@@ -399,7 +399,8 @@ void thread1(unsigned int n)
 		//disable();
 		x=cout.GetX();
 		y=cout.GetY();		
-		//cout.gotoxy(70,5);
+		cout.gotoxy(70,5);
+		cout<<"-";
 		//cout<<"\\\n"<<"   "<<*(int *)n<<"   \n";
 		
 		//cout.gotoxy(x,y);
@@ -412,15 +413,15 @@ void thread2(unsigned int n)
 	int x,y;
 	//tm->sleep(50);
 	//for(int i=0;i<5;i++)
-	{
+	while(1){
 		//disable();
-		x=cout.GetX();
-		y=cout.GetY();	
-		cout<<" value at "<<n<<" is "<<*(int *)n<<"\n";
-		*(int *)n=20;
-		cout<<" value at "<<n<<" is "<<*(int *)n<<"\n";
-		//cout.gotoxy(70,5);
-		//cout<<"|\n"<<"   "<<*(int *)n<<"   \n";
+		//x=cout.GetX();
+		//y=cout.GetY();	
+		//cout<<" value at "<<n<<" is "<<*(int *)n<<"\n";
+		//*(int *)n=20;
+		//cout<<" value at "<<n<<" is "<<*(int *)n<<"\n";
+		cout.gotoxy(70,5);
+		cout<<"|";//<<"   "<<*(int *)n<<"   \n";
 		//cout.clear();
 		//////**(char **)n='p';
 		//cout.gotoxy(x,y);
@@ -435,49 +436,49 @@ void thread3(unsigned int n)
 	for(int i=0;;i++)
 	{
 		//disable();
-		x=cout.GetX();
-		y=cout.GetY();
+		//x=cout.GetX();
+		//y=cout.GetY();
 		*(int *)n=999;
-		//cout.gotoxy(70,5);
-		//cout<<"-\n"<<"   "<<*(int *)n<<"   \n";
+		cout.gotoxy(70,5);
+		cout<<"\\";//<<"   "<<*(int *)n<<"   \n";
 		//cout.gotoxy(x,y);
 		//enable();
 		//wait_ms(10);
 	}
 }
-extern void init_disks();
+
 void thread4(unsigned int )
 {
 	/*int x,y;
 	int z=10,k=100;	
-	//wait_ms(5);
-	//for(;;)
+	//wait_ms(5);*/
+	for(;;)
 	{
 		//disable();
-		x=cout.GetX();
-		y=cout.GetY();
+		//x=cout.GetX();
+		//y=cout.GetY();
 				
-		//cout.gotoxy(70,5);
-		//cout<<"/\n"<<"   "<<*(int *)n<<"   \n";
+		cout.gotoxy(70,5);
+		cout<<"/\n";//<<"   "<<*(int *)n<<"   \n";
 		//cout.gotoxy(x,y);
 		//enable();
 		//cout<<"input an int ";
 		//cin>>z;
-		cout<<" address of z is "<<(unsigned)&z<<"\n";
-		cout<<" address of k is "<<(unsigned)&k<<"\n";
-		cout<<"z="<<z<<"\n";
-		cout<<"k="<<k<<"\n";
-		thread *chld,*chld1;
-		chld=create_thread(thread2,(unsigned int)&z,LOW_PRIO,0);
-		chld1=create_thread(thread3,(unsigned int)&k,LOW_PRIO,0);
-		task_q->add(chld);
-		task_q->add(chld1);
-		wait_on_thread(chld);
-		wait_on_thread(chld1);
-		cout<<"z="<<z<<"\n";
-		cout<<"k="<<k<<"\n";
+		//cout<<" address of z is "<<(unsigned)&z<<"\n";
+		//cout<<" address of k is "<<(unsigned)&k<<"\n";
+		//cout<<"z="<<z<<"\n";
+		//cout<<"k="<<k<<"\n";
+		//thread *chld,*chld1;
+		//chld=create_thread(thread2,(unsigned int)&z,LOW_PRIO,0);
+		//chld1=create_thread(thread3,(unsigned int)&k,LOW_PRIO,0);
+		//task_q->add(chld);
+		//task_q->add(chld1);
+		//wait_on_thread(chld);
+		//wait_on_thread(chld1);
+		//cout<<"z="<<z<<"\n";
+		//cout<<"k="<<k<<"\n";
 		//wait_ms(10);
-	}*/
+	}
 }
 void thread5(unsigned int )
 {
@@ -491,10 +492,10 @@ void init_tasks()
 	task_q=new thread_que();
 	zombie=new thread_que();
 	task_q->add(create_thread(idle,0,IDLE_PRIO,1));
-	//task_q->add(create_thread(thread1,(unsigned int )&b,LOW_PRIO,1));
-	//task_q->add(create_thread(thread2,(unsigned int )&c,LOW_PRIO,1));
-	//task_q->add(create_thread(thread3,(unsigned int )&d,LOW_PRIO,1));
-	//task_q->add(create_thread(thread4,0,HIGH_PRIO,0));
+	task_q->add(create_thread(thread1,(unsigned int )&b,LOW_PRIO,1));
+	task_q->add(create_thread(thread2,(unsigned int )&c,LOW_PRIO,1));
+	task_q->add(create_thread(thread3,(unsigned int )&d,LOW_PRIO,1));
+	task_q->add(create_thread(thread4,0,HIGH_PRIO,0));
 	task_q->add(create_thread(thread5,0,HIGH_PRIO,1)); //our shell
 	tasker=1;
 	enable();
