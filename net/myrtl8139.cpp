@@ -5,6 +5,7 @@
 #include "string.h"
 #include "OStream.h"
 #include "myrtl8139.h"
+#include "utils.h"
 
 using namespace String;
 
@@ -21,6 +22,8 @@ using namespace String;
 #define TX_DMA_BURST	4		/* Calculate as 16<<val. */
 #define MAX_DMA_BURST	7
 #define TX_FIFO_THRESH 256	/* In bytes, rounded down to 32 byte units. */
+
+rtl8139 *rtl_dev;
 
 // reset the RTL 8139 card
 bool rtl_8139_reset(unsigned short base)
@@ -160,6 +163,16 @@ void rtl8139::info()
 	
 	show_mac();
 }
+
+void analyze_pkt()
+{
+	unsigned char anbuff[1500];
+	rtl_dev->receive(anbuff);
+	hex_dump(anbuff,60);
+	cout<<"==========================\n";
+	//delete[] anbuff;
+	
+}
 void rtl8139::irq_handler(void *sd)
 {
 	// so we got an IRQ Eh... our device is working..
@@ -177,7 +190,7 @@ void rtl8139::irq_handler(void *sd)
 	else if(isr_val & RXOK)
 	{
 		cout<<"RX ok\n"; 
-		
+		analyze_pkt();
 	}
 	else 
 	{
@@ -188,7 +201,7 @@ void rtl8139::irq_handler(void *sd)
 	
 }
 
-rtl8139 *rtl_dev;
+
 void detect_netdev()
 {
 	pci_bus *pb = pci_bus::Instance();
@@ -210,7 +223,7 @@ void detect_netdev()
 			rtl_dev->init(get_bar(net_dev,0)&(~0x3), net_dev->irq);
 			rtl_dev->show_mac();
 			rtl_dev->info();
-			rtl_dev->send((char *)rtl_dev, 60);
+			//rtl_dev->send((char *)rtl_dev, 60);
 		}
 		else
 			cout<<"Unsupported device...\n";
